@@ -51,6 +51,10 @@ constexpr int RESULT_BASES[] = {BASE_DECIMAL, BASE_HEXADECIMAL, BASE_OCTAL, BASE
 constexpr AngleUnit ANGLE_UNITS[] = {ANGLE_UNIT_RADIANS, ANGLE_UNIT_DEGREES, ANGLE_UNIT_GRADIANS};
 
 KnownVariable *answer_variable = nullptr;
+/// Holds the evaluated value while a trailing "to ..." conversion is printed, so the conversion
+/// never re-evaluates the expression (random functions would otherwise give two results).
+KnownVariable *conversion_variable = nullptr;
+constexpr auto CONVERSION_VARIABLE = "inksvectorvalue";
 bool definitions_loaded = false;
 
 /**
@@ -59,6 +63,10 @@ bool definitions_loaded = false;
  * Only the GTK main thread starts a download and evaluates expressions.
  */
 std::atomic<bool> fetching_rates{false};
+
+/// True while the download thread itself runs (fetching_rates also covers loading the result).
+std::atomic<bool> rates_worker_running{false};
+constexpr int EXIT_WAIT_FOR_DOWNLOAD_MS = 5000;
 
 /**
  * Create the global libqalculate engine once per process.
@@ -84,7 +92,12 @@ void ensure_engine()
     // libqalculate keeps an idle calculation thread blocked in fread() on an internal pipe. If it
     // still runs when the process exits, exit() deadlocks while flushing stdio streams. atexit
     // handlers run before that flush, so stop the thread there (Qalculate! does the same).
+    // A download thread still inside libcurl/libqalculate while static objects are destroyed could
+    // crash the exit, so give it a bounded time to finish first.
     std::atexit([] {
+        for (int waited = 0; rates_worker_running && waited < EXIT_WAIT_FOR_DOWNLOAD_MS; waited += 50) {
+            g_usleep(50 * 1000);
+        }
         if (CALCULATOR) {
             CALCULATOR->terminateThreads();
         }
@@ -109,6 +122,9 @@ void ensure_engine()
         answer_variable = new KnownVariable("Temporary", "ans", MathStructure(), "Last Answer", false);
         CALCULATOR->addVariable(answer_variable);
     }
+    conversion_variable =
+        new KnownVariable("Temporary", CONVERSION_VARIABLE, MathStructure(), "Inksvector conversion value", false);
+    CALCULATOR->addVariable(conversion_variable);
 }
 
 Gtk::Label *make_label(Glib::ustring const &text, Gtk::Align halign)
@@ -528,13 +544,18 @@ void CalculatorDialog::calculate()
         parsed_po.preserve_format = true;
         parsed = CALCULATOR->print(parsed_value, CALCULATION_TIMEOUT_MS, parsed_po);
     } else {
-        // Conversions ("to mm", "to hex", "to fraction", ...) are handled by calculateAndPrint.
-        CALCULATOR->clearMessages();
-#if QALCULATE_MAJOR_VERSION >= 5
-        result = CALCULATOR->calculateAndPrint(input, CALCULATION_TIMEOUT_MS, eo, po, &parsed);
-#else
-        result = CALCULATOR->calculateAndPrint(input, CALCULATION_TIMEOUT_MS, eo, po);
-#endif
+        // Conversions ("to mm", "to hex", "to fraction", ...) are handled by calculateAndPrint. It
+        // converts the value computed above (through a temporary variable) instead of evaluating
+        // the expression a second time, so the displayed result and "ans" are the same value.
+        conversion_variable->set(value);
+        result = CALCULATOR->calculateAndPrint(std::string(CONVERSION_VARIABLE) + " to " + to,
+                                               CALCULATION_TIMEOUT_MS, eo, po);
+        conversion_variable->set(MathStructure());
+        PrintOptions parsed_po = po;
+        parsed_po.is_approximate = nullptr;
+        parsed_po.base = BASE_DECIMAL;
+        parsed_po.preserve_format = true;
+        parsed = CALCULATOR->print(parsed_value, CALCULATION_TIMEOUT_MS, parsed_po) + " to " + to;
     }
 
     // Collect errors and warnings produced by the calculation.
@@ -629,8 +650,10 @@ void CalculatorDialog::update_exchange_rates()
     show_message(_("Downloading exchange rates..."), false);
 
     auto payload = new RatesResult{_alive, this, false};
+    rates_worker_running = true;
     std::thread([payload] {
         payload->success = CALCULATOR->fetchExchangeRates(15);
+        rates_worker_running = false;
         // Back to the GTK main loop; g_idle_add is safe to call from any thread.
         g_idle_add(
             [](gpointer data) -> gboolean {
