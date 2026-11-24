@@ -365,3 +365,9 @@ endif()
 if(BUILD_SHARED_LIBS)
     install(TARGETS inkscape_base LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/inkscape")
 endif()
+if(WIN32)
+    # Inksvector: after the executables are installed, bundle any MinGW DLL they still need
+    # (the fixed list in InstallMSYS2.cmake can miss one; see CMakeScripts/BundleMinGWRuntime.cmake).
+    install(CODE "set(INKSVECTOR_MINGW_BIN \"${MINGW_BIN}\")")
+    install(SCRIPT "${CMAKE_SOURCE_DIR}/CMakeScripts/BundleMinGWRuntime.cmake")
+endif()

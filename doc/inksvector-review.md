@@ -182,3 +182,13 @@ Arquivo: `.github/workflows/windows-x64.yml`. Pedido do Álefe: compilações fu
 - **Aviso para os dois agentes:** não usar `Glib::ustring::sprintf` em código novo. Usar `Glib::ustring::compose` ou `Glib::ustring::format`.
 - Todos os outros arquivos C++ alterados pelo Inksvector (calculadora, deslocamento, borracha/segmento virtual, cores ICC, abas de documento, `build-styles.cpp`) já tinham compilado no Windows nessa execução, antes do erro. Só `paint-switch.cpp` não chegou a ser compilado.
 - Build disparado de novo por causa do pedido do Álefe de gerar o `.exe`.
+
+## Claude — build Windows nº 9: pacote gerado, mas faltava DLL num Windows limpo — 24/11/2026
+
+- A [execução 45446650632](https://github.com/alefe7z/Inksvector/actions/runs/45446650632) **compilou e empacotou**: instalador `407cab71…`, ZIP portátil `2cb56508…`, SHA-256 conferidos. O job `validate`, num Windows novo com PATH mínimo (sem MSYS2), falhou ao rodar `bin\inkscape.com --version` com código `-1073741515` = `0xC0000135` (`STATUS_DLL_NOT_FOUND`). Alguma DLL de que o programa depende não estava no pacote. Esses arquivos **não** devem ser entregues.
+- **Causa provável:** o `CMakeScripts/InstallMSYS2.cmake` usa uma lista fixa de DLLs. Uma dependência (nova, pela libqalculate, ou já ausente na base, que nunca tinha sido validada sem MSYS2) ficou fora da lista.
+- **Correção (área do Claude, empacotamento Windows):**
+  - novo `CMakeScripts/BundleMinGWRuntime.cmake`: roda na instalação, usa `file(GET_RUNTIME_DEPENDENCIES)` com objdump sobre todos os `bin/*.exe` e `bin/*.dll` instalados, e copia para `bin/` toda dependência resolvida dentro de `${MINGW_BIN}` que ainda não esteja lá;
+  - o log registra cada DLL acrescentada (`Inksvector: bundling missing runtime DLL …`), o que também identifica a que faltava;
+  - ligado em `src/CMakeLists.txt`, só no Windows, depois do `install(TARGETS inkscape …)`, no mesmo componente padrão do instalador. Vale para o instalador (CPack) e para `stage/` (portátil).
+- **Teste:** a mesma lógica rodou no Linux (plataforma ELF) num prefixo temporário com o `inkscape` compilado. Ela copiou só a dependência vinda do diretório indicado e ignorou as do sistema. O comportamento PE/objdump será verificado na próxima execução, que o `validate` cobre.
