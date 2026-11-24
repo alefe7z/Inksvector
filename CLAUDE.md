@@ -22,4 +22,6 @@ O commit `885673f94449367327d6e87536ae64132b802186` adicionou o botão de desloc
 
 O GitHub Actions usa MSYS2 UCRT64, CMake, Ninja e NSIS. A execução de referência da base concluiu com sucesso em https://github.com/alefe7z/Inksvector/actions/runs/45382395012. A execução com deslocamento está em https://github.com/alefe7z/Inksvector/actions/runs/45403533374. Consulte o status e os logs antes de editar o workflow.
 
+Gere executáveis Windows somente quando Álefe pedir explicitamente. O workflow é manual (`workflow_dispatch`). Commits e pushes não devem disparar a geração de executáveis.
+
 Sempre que Álefe solicitar um `.exe`, a entrega deve incluir o instalador e uma versão portátil que abra com dois cliques, sem instalação. Se a portátil depender de DLLs, ícones ou recursos, entregue um ZIP com a estrutura inteira e indique qual executável abrir após extrair. O empacotamento portátil ainda está pendente. Valide a abertura em Windows x64 sem MSYS2 instalado e inclua SHA-256 dos artefatos.
