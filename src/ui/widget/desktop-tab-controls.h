@@ -46,8 +46,6 @@ private:
     Gtk::ScrolledWindow *_scrollwin;
     sigc::scoped_connection _on_idle_scroll;
 
-    class Instances;
-
     void _updateVisibility();
     void _rebuildMenu();
 };

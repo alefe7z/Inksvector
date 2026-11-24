@@ -3,6 +3,7 @@
 #include <giomm/menu.h>
 #include <giomm/simpleactiongroup.h>
 #include <glibmm/main.h>
+#include <glibmm/i18n.h>
 #include <gtkmm/button.h>
 #include <gtkmm/menubutton.h>
 #include <gtkmm/scrollbar.h>
@@ -15,53 +16,18 @@
 
 namespace Inkscape::UI::Widget {
 
-/// Global list of all DesktopTabControls instances. Its only purpose is to
-/// coordinate when tab bars should be shown/hidden.
-class DesktopTabControls::Instances
-{
-public:
-    static Instances &get()
-    {
-        static Instances instance;
-        return instance;
-    }
-
-    void add(DesktopTabControls *w)
-    {
-        _instances.push_back(w);
-        if (_instances.size() > 1) {
-            _updateVisibilityAll();
-        }
-    }
-
-    void remove(DesktopTabControls *w)
-    {
-        _instances.erase(std::find(_instances.begin(), _instances.end(), w));
-        if (_instances.size() <= 1) {
-            _updateVisibilityAll();
-        }
-    }
-
-    bool forceVisible() const { return _instances.size() > 1; }
-
-private:
-    Instances() = default;
-
-    void _updateVisibilityAll()
-    {
-        for (auto w : _instances) {
-            w->_updateVisibility();
-        }
-    }
-
-    std::vector<DesktopTabControls *> _instances;
-};
-
 DesktopTabControls::DesktopTabControls(SPDesktopWidget *desktop_widget)
     : _tabs{std::make_unique<Inkscape::UI::Widget::DesktopTabRow>(desktop_widget)}
     , _menu{Gio::Menu::create()}
 {
     set_name("DesktopTabControls");
+
+    auto home = Gtk::make_managed<Gtk::MenuButton>();
+    home->set_icon_name("go-home-symbolic");
+    home->set_has_frame(false);
+    home->set_tooltip_text(_("Open documents"));
+    home->set_menu_model(_menu);
+    append(*home);
 
     _prevbtn = Gtk::make_managed<Gtk::Button>();
     _prevbtn->set_has_frame(false);
@@ -89,6 +55,8 @@ DesktopTabControls::DesktopTabControls(SPDesktopWidget *desktop_widget)
     // Use a horizontal scrollbar (so that we can scroll_to()), but keep it hidden
     _scrollwin->set_policy(Gtk::PolicyType::ALWAYS, Gtk::PolicyType::NEVER);
     _scrollwin->get_hscrollbar()->set_visible(false);
+    _scrollwin->set_propagate_natural_width(true);
+    _scrollwin->set_hexpand(false);
     append(*_scrollwin);
 
     _scrollwin->get_hadjustment()->signal_changed().connect(sigc::mem_fun(*this, &DesktopTabControls::_updateVisibility));
@@ -99,13 +67,12 @@ DesktopTabControls::DesktopTabControls(SPDesktopWidget *desktop_widget)
     _nextbtn->signal_clicked().connect(sigc::mem_fun(*_tabs, &DesktopTabRow::switchToNextDesktop));
     append(*_nextbtn);
 
-    auto const menubtn = Gtk::make_managed<Gtk::MenuButton>();
-    menubtn->set_has_frame(false);
-    menubtn->set_halign(Gtk::Align::END);
-    menubtn->set_valign(Gtk::Align::CENTER);
-    menubtn->set_menu_model(_menu);
-    menubtn->set_name("DesktopTabMenu");
-    append(*menubtn);
+    auto add = Gtk::make_managed<Gtk::Button>();
+    add->set_icon_name("list-add-symbolic");
+    add->set_has_frame(false);
+    add->set_tooltip_text(_("New document"));
+    add->set_action_name("app.document-new");
+    append(*add);
 
     auto actiongroup = Gio::SimpleActionGroup::create();
     actiongroup->add_action_with_parameter("switch-to", Glib::VARIANT_TYPE_INT32, [this] (const Glib::VariantBase &val) {
@@ -113,14 +80,10 @@ DesktopTabControls::DesktopTabControls(SPDesktopWidget *desktop_widget)
     });
     insert_action_group("tab-controls", actiongroup);
 
-    Instances::get().add(this);
     _updateVisibility();
 }
 
-DesktopTabControls::~DesktopTabControls()
-{
-    Instances::get().remove(this);
-}
+DesktopTabControls::~DesktopTabControls() = default;
 
 void DesktopTabControls::addTab(SPDesktop *desktop, int pos)
 {
@@ -172,8 +135,6 @@ SPDesktop *DesktopTabControls::tabAtPosition(int i) const
 
 void DesktopTabControls::_updateVisibility()
 {
-    set_visible(_tabs->size() > 1 || Instances::get().forceVisible());
-
     auto adj = _scrollwin->get_hadjustment();
     auto scroll_has_hidden_tabs = adj->get_page_size() < adj->get_upper();
     auto show_buttons = _tabs->size() > 1 && scroll_has_hidden_tabs;

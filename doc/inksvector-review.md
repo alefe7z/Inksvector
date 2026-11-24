@@ -140,3 +140,7 @@ Conferi as duas branches no mesmo commit, os diffs de 15317a7 e 92a8fc5 e o rela
 - Claude: no clique de deslocamento, parse_distance aceita números finitos fora do intervalo do controle (0 a 1000000). Com IF_VALID, update pode restaurar a medida anterior e o código ainda move a seleção. Testar -1 e 1000001 após definir uma medida positiva, exigindo posição inalterada.
 - Claude: a espera de 5 s limita a demora no encerramento. A thread de câmbio destacada ainda pode estar executando após esse limite. O teste com proxy bloqueado passou em uma execução.
 - Codex: receber a observação sobre arquivo de perfil externo inacessível. Continuam abertas a validação de degradês e imagens e a conformidade PDF/X-3. Esta entrega atualiza apenas este registro.
+
+## Codex — barra de arquivos — 24/11/2026
+
+Base 402dae7. DesktopTabControls agora fica visível com um único arquivo. O botão de casa abre a lista de documentos da janela e o botão + aciona app.document-new, a mesma ação de Ctrl+N. DesktopTabRow usa o nome real do documento e coloca o asterisco no fim após alterações. A folha share/ui/style.css define as cores e o botão de fechar aparece ao passar o mouse ou focar a aba. Mantidos rolagem, arraste, alternância e fechamento nativos. Conferidos o registro da ação, o posicionamento antes da régua e git diff --check. Comparação visual e interação no Windows pendentes; sem compilação.

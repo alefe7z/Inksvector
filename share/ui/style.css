@@ -1498,7 +1498,48 @@ frame.flat {
 }
 
 /* Tabs widget */
-#DocumentTab { padding: 3px; }
+#DesktopTabControls,
+#DesktopTabControls notebook,
+#DesktopTabControls header,
+#DesktopTabControls tabs {
+    background: #232323;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+#DesktopTabControls > button, #DesktopTabControls > menubutton > button {
+    background: #393939;
+    color: #eeeeee;
+    min-width: 20px;
+    min-height: 22px;
+    margin: 2px 2px 0;
+    padding: 0;
+    border: none;
+    border-radius: 4px 4px 0 0;
+}
+#DocumentTab {
+    background: #383838;
+    color: #eeeeee;
+    min-height: 22px;
+    margin: 2px 2px 0;
+    padding: 0 2px;
+    border: none;
+    border-radius: 4px 4px 0 0;
+    box-shadow: none;
+    font-size: 12px;
+}
+#DocumentTab:hover { background: #454545; }
+#DocumentTab:checked { background: #214872; color: white; }
+#DocumentTab button.close-button {
+    opacity: 0;
+    min-width: 12px;
+    min-height: 12px;
+    padding: 0;
+    margin: 0;
+    -gtk-icon-size: 12px;
+}
+#DocumentTab:hover button.close-button,
+#DocumentTab:focus-within button.close-button { opacity: 1; }
 
 #DocumentTabsWidget { box-shadow: none; }
 

@@ -136,10 +136,6 @@ Glib::ustring get_title(SPDesktop *desktop)
 
     auto const doc = desktop->doc();
 
-    if (doc->isModifiedSinceSave()) {
-        result += "*";
-    }
-
     result += doc->getDocumentName();
 
     if (doc->isTemplate()) {
@@ -151,6 +147,9 @@ Glib::ustring get_title(SPDesktop *desktop)
         result += Glib::ustring::format(v);
     }
 
+    if (doc->isModifiedSinceSave()) {
+        result += "*";
+    }
     return result;
 }
 
