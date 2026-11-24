@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs><clipPath id="tile"><rect x="6" y="6" width="52" height="52" rx="2"/></clipPath></defs>
+  <rect x="6" y="6" width="52" height="52" rx="2" fill="#f1f6fb" stroke="#c0ccda"/>
+  <path clip-path="url(#tile)" d="M8 12Q12 12 12 56 M8 24Q24 24 24 56 M8 36Q36 36 36 56 M8 48Q48 48 48 56" fill="none" stroke="#315a82" stroke-width="1.35"/>
+</svg>

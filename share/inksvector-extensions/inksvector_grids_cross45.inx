@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Cruz 45 Graus</name>
+  <id>org.inksvector.grids.cross45</id>
+  <param name="mode" type="string" gui-hidden="true">cross45</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Adiciona duas guias de 45° pelo centro da página.</menu-tip>
+    <icon>inksvector_grids_cross45.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>

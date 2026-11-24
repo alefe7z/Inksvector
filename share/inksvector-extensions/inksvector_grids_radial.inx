@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Guias Radiais</name>
+  <id>org.inksvector.grids.radial</id>
+  <param name="mode" type="string" gui-hidden="true">radial</param>
+  <param name="divisions" type="int" min="2" max="64" gui-text="Divisões">8</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Distribui guias ao redor do centro da página.</menu-tip>
+    <icon>inksvector_grids_radial.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>

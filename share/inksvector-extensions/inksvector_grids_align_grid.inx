@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Alinhar à Grade</name>
+  <id>org.inksvector.grids.align-grid</id>
+  <param name="mode" type="string" gui-hidden="true">align-grid</param>
+  <param name="spacing" type="float" min="0.1" max="10000" precision="2" gui-text="Espaçamento (mm)">10</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Encaixa o centro de cada objeto selecionado na malha mais próxima, com origem no canto da página.</menu-tip>
+    <icon>inksvector_grids_align_grid.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>

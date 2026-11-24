@@ -42,6 +42,13 @@ install(DIRECTORY extensions DESTINATION ${INKSCAPE_SHARE_INSTALL}
     PATTERN "other/inkman" EXCLUDE
 )
 
+# Inksvector extensions are maintained in the main repository.
+install(DIRECTORY inksvector-extensions/ DESTINATION ${INKSCAPE_SHARE_INSTALL}/extensions
+    COMPONENT extensions
+    FILES_MATCHING PATTERN "*.inx" PATTERN "*.py" PATTERN "*.svg"
+    PATTERN "__pycache__" EXCLUDE
+)
+
 install(DIRECTORY extensions/other/inkman DESTINATION ${INKSCAPE_SHARE_INSTALL}/extensions/inkman/
     COMPONENT extension_manager
     PATTERN "tests" EXCLUDE

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Guias Marginais</name>
+  <id>org.inksvector.grids.margin</id>
+  <param name="mode" type="string" gui-hidden="true">margin</param>
+  <param name="margin" type="float" min="1" max="49" precision="1" gui-text="Margem (%)">10</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Cria margens simétricas em percentual das dimensões da página.</menu-tip>
+    <icon>inksvector_grids_margin.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>

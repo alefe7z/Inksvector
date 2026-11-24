@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs><clipPath id="tile"><rect x="6" y="6" width="52" height="52" rx="2"/></clipPath></defs>
+  <rect x="6" y="6" width="52" height="52" rx="2" fill="#f1f6fb" stroke="#c0ccda"/>
+  <path clip-path="url(#tile)" d="M32.00 20.00L8.00 56.00 M32.00 20.00L16.00 56.00 M32.00 20.00L24.00 56.00 M32.00 20.00L32.00 56.00 M32.00 20.00L40.00 56.00 M32.00 20.00L48.00 56.00 M32.00 20.00L56.00 56.00 M29.33 24.00L34.67 24.00 M25.33 30.00L38.67 30.00 M18.67 40.00L45.33 40.00 M8.00 56.00L56.00 56.00" fill="none" stroke="#315a82" stroke-width="1.35"/>
+</svg>

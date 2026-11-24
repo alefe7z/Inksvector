@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Geometria Guiada</name>
+  <id>org.inksvector.grids.guided-geometry</id>
+  <param name="mode" type="string" gui-hidden="true">guided-geometry</param>
+  <param name="divisions" type="int" min="2" max="64" gui-text="Divisões">8</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Desenha um polígono regular com seus raios de construção.</menu-tip>
+    <icon>inksvector_grids_guided_geometry.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Grade de Perspectiva</name>
+  <id>org.inksvector.grids.perspective</id>
+  <param name="mode" type="string" gui-hidden="true">perspective</param>
+  <param name="divisions" type="int" min="2" max="64" gui-text="Divisões">8</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Desenha uma malha vetorial com um ponto de fuga.</menu-tip>
+    <icon>inksvector_grids_perspective.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>

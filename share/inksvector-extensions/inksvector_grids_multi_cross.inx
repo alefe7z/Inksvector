@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Múltiplas Cruzes</name>
+  <id>org.inksvector.grids.multi-cross</id>
+  <param name="mode" type="string" gui-hidden="true">multi-cross</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Insere guias nos pontos de quarto, meio e três quartos da página.</menu-tip>
+    <icon>inksvector_grids_multi_cross.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>

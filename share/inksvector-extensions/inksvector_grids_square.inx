@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Grade Quadrada</name>
+  <id>org.inksvector.grids.square</id>
+  <param name="mode" type="string" gui-hidden="true">square</param>
+  <param name="spacing" type="float" min="0.1" max="10000" precision="2" gui-text="Espaçamento (mm)">10</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu><submenu name="Grades e Linhas"/></effects-menu>
+    <menu-tip>Adiciona uma grade retangular à página.</menu-tip>
+    <icon>inksvector_grids_square.svg</icon>
+  </effect>
+  <script><command location="inx" interpreter="python">inksvector_grids.py</command></script>
+</inkscape-extension>
