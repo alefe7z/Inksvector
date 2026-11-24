@@ -30,13 +30,15 @@ jobs:
         run: |
           set -euo pipefail
           source_dir=.
-          # Bootstrap the Windows build while the repository only has the workflow.
+          # Bootstrap the Windows build until the full source tree is imported.
           if [[ ! -f CMakeLists.txt ]]; then
             source_dir=_upstream
             upstream_commit=82ace79ad91b0af7e8fc4b93e194c64a5f17fd67
             git init "$source_dir"
             git -C "$source_dir" fetch --depth=1 https://gitlab.com/inkscape/inkscape.git "$upstream_commit"
             git -C "$source_dir" checkout --detach "$upstream_commit"
+            cp --parents src/ui/toolbar/select-toolbar.cpp share/ui/toolbar-select.ui \
+              share/icons/hicolor/symbolic/actions/selection-displacement*-symbolic.svg "$source_dir"
           fi
           git -C "$source_dir" submodule update --init --recursive --depth=1 --jobs 4
           bash "$source_dir/buildtools/msys2installdeps.sh"
