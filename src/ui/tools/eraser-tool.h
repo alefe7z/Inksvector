@@ -20,6 +20,8 @@
  * Released under GNU GPL v2+, read the file 'COPYING' for more information.
  */
 
+#include <optional>
+
 #include "message.h"
 #include "object/weakptr.h"
 #include "style-enums.h"
@@ -37,7 +39,8 @@ enum class EraserToolMode
 {
     DELETE,
     CUT,
-    CLIP
+    CLIP,
+    SEGMENT
 };
 static inline constexpr auto DEFAULT_ERASER_MODE = EraserToolMode::CUT;
 
@@ -58,10 +61,15 @@ class EraserTool : public DynamicBase
 {
 public:
     explicit EraserTool(SPDesktop *desktop);
+    ~EraserTool() override;
 
     bool root_handler(CanvasEvent const &event) override;
 
 private:
+    bool segmentEvent(CanvasEvent const &event);
+    void eraseVirtualSegments(Geom::Point const &from, Geom::Point const &to);
+    std::optional<Geom::Point> _segment_start;
+
     // non-static data:
     EraserToolMode mode = DEFAULT_ERASER_MODE;
     bool nowidth = false;

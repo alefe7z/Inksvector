@@ -17,6 +17,7 @@
 #include "inkscape-application.h"
 #include "inkscape-window.h"
 #include "message-context.h"
+#include "preferences.h"
 
 #include "object/box3d.h"
 #include "object/sp-ellipse.h"
@@ -33,6 +34,7 @@
 #include "ui/dialog/dialog-manager.h"
 #include "ui/dialog/inkscape-preferences.h"
 #include "ui/tools/connector-tool.h"
+#include "ui/tools/pen-tool.h"
 #include "ui/tools/text-tool.h"
 #include "ui/tools/tool-data.h"
 
@@ -174,6 +176,17 @@ tool_switch(Glib::ustring const &tool, InkscapeWindow *win)
     }
 }
 
+static void tool_bspline(InkscapeWindow *win)
+{
+    Inkscape::Preferences::get()->setInt("/tools/freehand/pen/freehand-mode", 2);
+    tool_switch("Pen", win);
+    if (auto desktop = win->get_desktop()) {
+        if (auto pen = dynamic_cast<Inkscape::UI::Tools::PenTool *>(desktop->getTool())) {
+            pen->setPolylineMode();
+        }
+    }
+}
+
 /**
  * Open preferences page for tool. Could be turned into actions if need be.
  */
@@ -290,6 +303,7 @@ std::vector<std::vector<Glib::ustring>> raw_data_tools =
     {"win.tool-switch('Spiral')",       N_("Spiral Tool"),          SECTION, N_("Create spirals")                                },
     {"win.tool-switch('Marker')",       N_("Marker Tool"),          SECTION, N_("Edit markers")                                  },
 
+    {"win.tool-bspline",                N_("B-spline Tool"),        SECTION, N_("Draw B-splines with editable control points")    },
     {"win.tool-switch('Pen')",          N_("Pen Tool"),             SECTION, N_("Draw Bezier curves and straight lines")         },
     {"win.tool-switch('Pencil')",       N_("Pencil Tool"),          SECTION, N_("Draw freehand lines")                           },
     {"win.tool-switch('Calligraphic')", N_("Calligraphy Tool"),     SECTION, N_("Draw calligraphic or brush strokes")            },
@@ -320,6 +334,7 @@ void
 add_actions_tools(InkscapeWindow* win)
 {
     // clang-format off
+    win->add_action("tool-bspline", sigc::bind(sigc::ptr_fun(&tool_bspline), win));
     win->add_action_radio_string ( "tool-switch",        sigc::bind(sigc::ptr_fun(&tool_switch),  win), "Select");
     win->add_action_radio_string ( "tool-toggle",        sigc::bind(sigc::ptr_fun(&tool_toggle),  win), "Select");
     // clang-format on

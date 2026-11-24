@@ -69,7 +69,10 @@ void ToolToolbar::set_visible_buttons(Gtk::ScrolledWindow &tool_toolbar)
             flowbox->set_max_children_per_line(1);
             last_box = flowbox;
         } else if (auto const btn = dynamic_cast<Gtk::Button *>(&widget)) {
-            auto const name = sp_get_action_target(btn);
+            auto name = sp_get_action_target(btn);
+            if (name.empty() && btn->get_action_name() == "win.tool-bspline") {
+                name = "Pen";
+            }
             auto show = prefs->getBool(get_tool_visible_button_path(name), true);
             auto const parent = btn->get_parent();
             if (show) {

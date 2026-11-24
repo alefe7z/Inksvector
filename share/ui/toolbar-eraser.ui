@@ -71,6 +71,17 @@
             <property name="icon-name">path-intersection</property>
           </object>
         </child>
+        <child>
+          <object class="GtkToggleButton">
+            <property name="valign">center</property>
+            <property name="focusable">True</property>
+            <property name="focus-on-click">False</property>
+            <property name="tooltip-text" translatable="yes">Delete virtual segment between intersections</property>
+            <property name="has-frame">False</property>
+            <property name="group">mode_buttons_group</property>
+            <property name="icon-name">inksvector-delete-virtual-segment-symbolic</property>
+          </object>
+        </child>
       </object>
     </child>
     <child>

@@ -27,6 +27,7 @@
 #define noERASER_VERBOSE
 
 #include "eraser-tool.h"
+#include "virtual-segments.h"
 
 #include <glibmm/i18n.h>
 #include <2geom/bezier-utils.h>
@@ -47,6 +48,7 @@
 #include "object/sp-image.h"
 #include "object/sp-path.h"
 #include "object/sp-rect.h"
+#include "object/sp-shape.h"
 #include "ui/icon-names.h"
 #include "ui/widget/events/canvas-event.h"
 #include "svg/svg.h"
@@ -84,11 +86,22 @@ EraserTool::EraserTool(SPDesktop *desktop)
     //TODO not sure why get 0.01 if slider width == 0, maybe a double/int problem
 
     _mode_int.min = 0;
-    _mode_int.max = 2;
+    _mode_int.max = 3;
     _updateMode();
     _mode_int.action = [this]() { _updateMode(); };
 
     enableSelectionCue();
+}
+
+EraserTool::~EraserTool()
+{
+    if (_segment_start) {
+        auto rubberband = Inkscape::Rubberband::get(_desktop);
+        if (rubberband->isStarted()) {
+            rubberband->stop();
+        }
+        ungrabCanvasEvents();
+    }
 }
 
 /**  Reads the current Eraser mode from Preferences and sets `mode` accordingly. */
@@ -102,6 +115,8 @@ void EraserTool::_updateMode()
         mode = EraserToolMode::CUT;
     } else if (mode_idx == 2) {
         mode = EraserToolMode::CLIP;
+    } else if (mode_idx == 3) {
+        mode = EraserToolMode::SEGMENT;
     } else {
         g_printerr("Error: invalid mode setting \"%d\" for Eraser tool!", mode_idx);
         mode = DEFAULT_ERASER_MODE;
@@ -322,8 +337,203 @@ void EraserTool::_cancel()
     repr = nullptr;
 }
 
+bool EraserTool::segmentEvent(CanvasEvent const &event)
+{
+    constexpr double drag_threshold = 4;
+    auto rubberband = Inkscape::Rubberband::get(_desktop);
+    bool handled = false;
+    inspect_event(event,
+        [&](ButtonPressEvent const &press) {
+            if (press.button == 1 && press.num_press == 1 &&
+                have_viable_layer(_desktop, defaultMessageContext())) {
+                _segment_start = press.pos;
+                grabCanvasEvents();
+                handled = true;
+            }
+        },
+        [&](MotionEvent const &motion) {
+            if (!_segment_start) {
+                return;
+            }
+            if (!rubberband->isStarted() && Geom::L2(motion.pos - *_segment_start) >= drag_threshold) {
+                rubberband->setMode(Rubberband::Mode::RECT);
+                rubberband->setHandle(Rubberband::default_handle);
+                rubberband->start(_desktop, _desktop->w2d(*_segment_start));
+            }
+            if (rubberband->isStarted()) {
+                rubberband->move(_desktop->w2d(motion.pos));
+            }
+            handled = true;
+        },
+        [&](ButtonReleaseEvent const &release) {
+            if (release.button != 1 || !_segment_start) {
+                return;
+            }
+            auto const from = *_segment_start;
+            _segment_start.reset();
+            if (rubberband->isStarted()) {
+                rubberband->stop();
+            }
+            ungrabCanvasEvents();
+            if (mode == EraserToolMode::SEGMENT) {
+                eraseVirtualSegments(Geom::L2(release.pos - from) >= drag_threshold ? from : release.pos,
+                                     release.pos);
+            }
+            handled = true;
+        },
+        [&](KeyPressEvent const &key) {
+            if (_segment_start && key.keyval == GDK_KEY_Escape) {
+                _segment_start.reset();
+                if (rubberband->isStarted()) {
+                    rubberband->stop();
+                }
+                ungrabCanvasEvents();
+                handled = true;
+            }
+        },
+        [](CanvasEvent const &) {});
+    return handled || DynamicBase::root_handler(event);
+}
+
+void EraserTool::eraseVirtualSegments(Geom::Point const &from, Geom::Point const &to)
+{
+    constexpr double grab_radius = 6;
+    bool const click = from == to;
+    auto const document_to_view = _desktop->doc2dt() * _desktop->d2w();
+    auto const view_to_document = document_to_view.inverse();
+    auto document_bounds = [&](Geom::Rect const &rect) {
+        Geom::Rect bounds(rect.corner(0) * view_to_document, rect.corner(2) * view_to_document);
+        bounds.expandTo(rect.corner(1) * view_to_document);
+        bounds.expandTo(rect.corner(3) * view_to_document);
+        return bounds;
+    };
+
+    auto const screen_rect = Geom::Rect(from, to);
+    auto hit_rect = screen_rect;
+    if (click) {
+        hit_rect.expandBy(grab_radius);
+    }
+
+    auto document = _desktop->getDocument();
+    auto selection = _desktop->getSelection();
+    auto candidates = document->getItemsPartiallyInBox(_desktop->dkey, document_bounds(hit_rect),
+                                                       false, false, false, true);
+    struct Outline {
+        SPShape *shape;
+        Geom::PathVector path;
+    };
+    std::vector<Outline> targets;
+    for (auto item : candidates) {
+        auto shape = cast<SPShape>(item);
+        if (shape && shape->curve() && !shape->curve()->empty() &&
+            !shape->i2doc_affine().isSingular()) {
+            targets.push_back({shape, *shape->curve() * (shape->i2doc_affine() * document_to_view)});
+        }
+    }
+
+    std::optional<Geom::PathVectorTime> nearest;
+    if (click) {
+        auto best = targets.end();
+        double distance = grab_radius;
+        // Prefer the upper object when two outlines are equally close.
+        for (auto it = targets.begin(); it != targets.end(); ++it) {
+            double candidate_distance = 0;
+            auto time = it->path.nearestTime(to, &candidate_distance);
+            if (time && candidate_distance <= distance) {
+                best = it;
+                nearest = time;
+                distance = candidate_distance;
+            }
+        }
+        if (best == targets.end()) {
+            return;
+        }
+        Outline chosen = std::move(*best);
+        targets.clear();
+        targets.push_back(std::move(chosen));
+    }
+
+    struct Edit {
+        std::string id;
+        Geom::PathVector remaining;
+    };
+    std::vector<Edit> edits;
+    for (auto const &[shape, outline] : targets) {
+        auto bounds = outline.boundsFast();
+        if (!bounds || !shape->getId()) {
+            continue;
+        }
+        VirtualCuts cuts(outline.size());
+        collectVirtualCuts(cuts, outline, outline, true);
+        for (auto item : document->getItemsPartiallyInBox(_desktop->dkey, document_bounds(*bounds),
+                                                         false, false, false, true)) {
+            auto cutter = cast<SPShape>(item);
+            if (cutter && cutter != shape && cutter->curve()) {
+                auto other = *cutter->curve() * (cutter->i2doc_affine() * document_to_view);
+                collectVirtualCuts(cuts, outline, other, false);
+            }
+        }
+
+        Geom::PathVector remaining;
+        auto should_remove = [&](std::size_t index, double start, double end, double length,
+                                 Geom::Path const &segment) {
+            if (!click) {
+                auto box = segment.boundsExact();
+                return box && screen_rect.contains(*box);
+            }
+            if (index != nearest->path_index) {
+                return false;
+            }
+            double time = nearest->asFlatTime();
+            if (outline[index].closed() && time == length) {
+                time = 0;
+            }
+            if (end > length && time < start) {
+                time += length;
+            }
+            return time >= start && (time < end || (time == length && end == length));
+        };
+        if (removeVirtualSegments(outline, std::move(cuts), should_remove, remaining)) {
+            // Retain local coordinates so the object's existing transform and styling survive.
+            remaining *= (shape->i2doc_affine() * document_to_view).inverse();
+            edits.push_back({shape->getId(), std::move(remaining)});
+        }
+    }
+
+    bool changed = false;
+    for (auto const &[id, remaining] : edits) {
+        auto item = cast<SPItem>(document->getObjectById(id.c_str()));
+        if (!item) {
+            continue;
+        }
+        if (remaining.empty()) {
+            item->deleteObject();
+            changed = true;
+            continue;
+        }
+        auto const selected = selection->includes(item);
+        std::vector<SPItem *> original{item};
+        std::vector<Inkscape::XML::Node *> converted;
+        sp_item_list_to_curves({item}, original, converted);
+        if (auto path = cast<SPPath>(document->getObjectById(id.c_str()))) {
+            path->getRepr()->setAttribute("d", sp_svg_write_path(remaining));
+            if (selected && !selection->includes(path)) {
+                selection->add(path);
+            }
+            changed = true;
+        }
+    }
+    if (changed) {
+        DocumentUndo::done(document, RC_("Undo", "Delete virtual segment"),
+                           INKSCAPE_ICON("draw-eraser"));
+    }
+}
+
 bool EraserTool::root_handler(CanvasEvent const &event)
 {
+    if (mode == EraserToolMode::SEGMENT || _segment_start) {
+        return segmentEvent(event);
+    }
     bool ret = false;
 
     inspect_event(event,

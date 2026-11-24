@@ -219,6 +219,8 @@ void PencilToolbar::hide_extra_widgets(Glib::RefPtr<Gtk::Builder> const &builder
     if (_tool_is_pencil) {
         use_pencil_pressure();
     }
+    _mode_observer = prefs->createObserver(freehand_tool_name() + "/freehand-mode",
+                                         [this](auto const &entry) { update_mode(entry.getInt()); });
 }
 
 PencilToolbar::~PencilToolbar() = default;
@@ -239,7 +241,14 @@ void PencilToolbar::setDesktop(SPDesktop *desktop)
 void PencilToolbar::mode_changed(int mode)
 {
     Preferences::get()->setInt(freehand_tool_name() + "/freehand-mode", mode);
+}
 
+void PencilToolbar::update_mode(int mode)
+{
+    if (mode < 0 || static_cast<std::size_t>(mode) >= _mode_buttons.size()) {
+        return;
+    }
+    _mode_buttons[mode]->set_active(true);
     _flatten_spiro_bspline_btn.set_visible(mode == 1 || mode == 2);
 
     bool visible = mode != 2;
@@ -248,8 +257,10 @@ void PencilToolbar::mode_changed(int mode)
     _flatten_simplify_btn.set_visible(visible && _simplify_btn.get_active());
 
     // Recall, the PencilToolbar is also used as the PenToolbar with minor changes.
-    if (auto pt = dynamic_cast<Tools::PenTool *>(_desktop->getTool())) {
-        pt->setPolylineMode();
+    if (_desktop) {
+        if (auto pt = dynamic_cast<Tools::PenTool *>(_desktop->getTool())) {
+            pt->setPolylineMode();
+        }
     }
 }
 

@@ -30,6 +30,7 @@
  */
 
 #include "toolbar.h"
+#include "preferences.h"
 #include "ui/operation-blocker.h"
 
 namespace Gtk {
@@ -90,6 +91,8 @@ private:
                                    ValueChangedMemFun value_changed_mem_fun);
     void hide_extra_widgets(Glib::RefPtr<Gtk::Builder> const &builder);
     void mode_changed(int mode);
+    void update_mode(int mode);
+    PrefObserver _mode_observer;
     Glib::ustring freehand_tool_name() const;
     void minpressure_value_changed();
     void maxpressure_value_changed();

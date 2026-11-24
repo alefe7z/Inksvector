@@ -182,6 +182,8 @@ unsigned EraserToolbar::_modeAsInt(Tools::EraserToolMode const mode)
         return 1;
     } else if (mode == EraserToolMode::CLIP) {
         return 2;
+    } else if (mode == EraserToolMode::SEGMENT) {
+        return 3;
     } else {
         return _modeAsInt(DEFAULT_ERASER_MODE);
     }
@@ -211,8 +213,9 @@ void EraserToolbar::set_eraser_mode_visibility(unsigned const eraser_mode)
 {
     using namespace Inkscape::UI::Tools;
 
-    // Most items are only visible in CLIP and CUT modes (invisible in DELETE mode)
-    bool const params_visibility = eraser_mode != _modeAsInt(EraserToolMode::DELETE);
+    // Stroke parameters apply only to clipping and cutting.
+    bool const params_visibility =
+        eraser_mode == _modeAsInt(EraserToolMode::CUT) || eraser_mode == _modeAsInt(EraserToolMode::CLIP);
     _params_sep.set_visible(params_visibility);
     _width_box.set_visible(params_visibility);
     _thinning_box.set_visible(params_visibility);
