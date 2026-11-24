@@ -6,7 +6,7 @@ Trabalhe na `main` deste repositório. Antes de editar, atualize a cópia local 
 
 ## Base e estrutura
 
-O ZIP enviado pelo Álefe corresponde ao Inkscape 1.5-dev, commit `82ace79ad91b0af7e8fc4b93e194c64a5f17fd67` de https://gitlab.com/inkscape/inkscape.git. A `main` armazena o workflow e os arquivos modificados. Para desenvolver localmente, obtenha a base nesse SHA, inicialize os submódulos recursivamente e sobreponha os arquivos modificados da `main`. Veja `.github/workflows/windows-x64.yml` para a composição usada no CI. Se adicionar arquivos ao produto antes de importar a árvore inteira, inclua-os na etapa de sobreposição do workflow. Preserve os commits dos submódulos e os arquivos de licença.
+O ZIP enviado pelo Álefe corresponde ao Inkscape 1.5-dev, commit `82ace79ad91b0af7e8fc4b93e194c64a5f17fd67` de https://gitlab.com/inkscape/inkscape.git. A `main` contém a árvore completa de código, os arquivos da ferramenta de deslocamento e o workflow do Windows. Use `git clone --recurse-submodules https://github.com/alefe7z/Inksvector.git` ou, em uma cópia já existente, `git submodule update --init --recursive` após atualizar a branch. Preserve os commits dos submódulos e os arquivos de licença.
 
 ## Deslocamento
 
