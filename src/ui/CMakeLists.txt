@@ -274,6 +274,7 @@ target_sources(inkscape_base PRIVATE
 	widget/page-properties.cpp
 	widget/page-size-preview.cpp
 	widget/page-selector.cpp
+	widget/page-tabs.cpp
 	widget/paint-attribute.cpp
 	widget/paint-enums.cpp
 	widget/paint-inherited.cpp
@@ -610,6 +611,7 @@ target_sources(inkscape_base PRIVATE
 	widget/oklab-color-wheel.h
 	widget/optglarea.h
 	widget/page-selector.h
+	widget/page-tabs.h
 	widget/paint-attribute.h
 	widget/paint-inherited.h
 	widget/paint-enums.h

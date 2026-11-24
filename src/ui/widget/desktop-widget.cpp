@@ -45,6 +45,7 @@
 #include "ui/dialog/dialog-container.h"
 #include "ui/dialog/dialog-multipaned.h"
 #include "ui/dialog/swatches.h"
+#include "ui/widget/page-tabs.h"
 #include "ui/popup-menu.h"
 #include "ui/themes.h"
 #include "ui/toolbar/command-toolbar.h"
@@ -110,6 +111,8 @@ SPDesktopWidget::SPDesktopWidget(InkscapeWindow *inkscape_window)
     _panels = Gtk::make_managed<Inkscape::UI::Dialog::SwatchesPanel>(UI::Dialog::SwatchesPanel::Compact, "/embedded/swatches");
     _panels->set_vexpand(false);
     prepend(*_panels);
+    _page_tabs = Gtk::make_managed<Inkscape::UI::Widget::PageTabs>();
+    prepend(*_page_tabs);
 
     /* DesktopHBox (Vertical toolboxes, canvas) */
     _hbox = Gtk::make_managed<Gtk::Box>();
@@ -306,6 +309,7 @@ void SPDesktopWidget::switchDesktop(SPDesktop *desktop)
         tool_toolbars->setTool(nullptr);
     }
 
+    _page_tabs->setDesktop(_desktop);
     _panels->setDesktop(_desktop);
 
     if (_desktop) {
@@ -383,6 +387,7 @@ void SPDesktopWidget::on_unrealize()
         Inkscape::Preferences::get()->setInt("/toolbox/tools/width", _tbbox->get_position());
     }
 
+    _page_tabs->setDesktop(nullptr);
     _panels->setDesktop(nullptr);
 
     modified_connection.disconnect();

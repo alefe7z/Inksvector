@@ -78,6 +78,7 @@ class ToolToolbar;
 } // namespace Toolbars
 
 namespace Widget {
+class PageTabs;
 class Button;
 class Canvas;
 class CanvasGrid;
@@ -131,6 +132,7 @@ private:
     Gtk::Grid* _top_toolbars = nullptr;
 
     Inkscape::UI::Widget::StatusBar *_statusbar = nullptr;
+    Inkscape::UI::Widget::PageTabs *_page_tabs;
     Inkscape::UI::Dialog::SwatchesPanel *_panels;
 
     /** A grid to display the canvas, rulers, and scrollbars. */

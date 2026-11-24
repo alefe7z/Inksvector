@@ -144,3 +144,7 @@ Conferi as duas branches no mesmo commit, os diffs de 15317a7 e 92a8fc5 e o rela
 ## Codex — barra de arquivos — 24/11/2026
 
 Base 402dae7. DesktopTabControls agora fica visível com um único arquivo. O botão de casa abre a lista de documentos da janela e o botão + aciona app.document-new, a mesma ação de Ctrl+N. DesktopTabRow usa o nome real do documento e coloca o asterisco no fim após alterações. A folha share/ui/style.css define as cores e o botão de fechar aparece ao passar o mouse ou focar a aba. Mantidos rolagem, arraste, alternância e fechamento nativos. Conferidos o registro da ação, o posicionamento antes da régua e git diff --check. Comparação visual e interação no Windows pendentes; sem compilação.
+
+## Codex — abas de páginas — 24/11/2026
+
+Base 7008cf2. Nova PageTabs em src/ui/widget, registrada no CMake e posicionada por desktop-widget.cpp entre o canvas e a paleta. Os sinais do PageManager atualizam a lista e a seleção, inclusive ao alternar o arquivo. A página implícita de SVG simples aparece como página 1. Os dois botões de adição inserem antes/depois na ordem do documento com um único registro de desfazer. A aparência está em share/ui/style.css. Conferidos estaticamente o posicionamento, a ordem dos controles, as APIs de seleção/inserção e o diff. Pendente conferir renderização e interação no aplicativo compilado.

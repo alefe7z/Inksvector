@@ -1903,3 +1903,30 @@ text-combobox .menuitem {
     margin: 0;
     border-spacing: 0;
 }
+
+#PageTabs {
+    background: #252525;
+    color: #eeeeee;
+    padding: 0 4px 2px;
+    border-bottom: 1px solid #505050;
+    font-size: 12px;
+}
+#PageTabs button {
+    color: #d4d6d8;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    min-width: 20px;
+    min-height: 22px;
+    padding: 0;
+}
+#PageTabs button:disabled { color: #646464; }
+#PageTabs button.page-tab {
+    background: #3b3b3b;
+    min-width: 88px;
+    padding: 0 6px;
+    margin-right: 2px;
+    border-radius: 0 0 4px 4px;
+}
+#PageTabs button:hover { background: #484848; }
+#PageTabs button.page-tab.current { background: #214872; color: white; }
