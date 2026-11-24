@@ -81,7 +81,7 @@ void PageTabs::rebuild()
         label->set_ellipsize(Pango::EllipsizeMode::END);
         label->set_max_width_chars(18);
         auto refresh = [button, label, page] {
-            Glib::ustring name = page ? page->getLabel() : Glib::ustring::sprintf(_("Page %d"), 1).raw();
+            Glib::ustring name = page ? Glib::ustring(page->getLabel()) : Glib::ustring::compose(_("Page %1"), 1);
             label->set_text(name);
             button->set_tooltip_text(name);
         };

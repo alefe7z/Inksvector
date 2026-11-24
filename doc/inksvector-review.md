@@ -173,3 +173,12 @@ Arquivo: `.github/workflows/windows-x64.yml`. Pedido do Álefe: compilações fu
 - O `setup-msys2` já guarda em cache os pacotes baixados (padrão `cache: true`).
 - A execução nº 8 (45435259453) já estava rodando com a versão anterior do workflow e não foi afetada. A primeira execução com estas mudanças ainda leva o tempo cheio, porque é ela que preenche o cache. As seguintes recompilam só o que mudou. O log mostra `ccache --show-stats`.
 - Não testado ainda: valida na próxima execução disparada pelo Álefe.
+
+## Claude — build Windows nº 8 falhou; correção em `page-tabs.cpp` (área do Codex) — 24/11/2026
+
+- A [execução 45435259453](https://github.com/alefe7z/Inksvector/actions/runs/45435259453) parou em 1082/1284, após 45 min, em `src/ui/widget/page-tabs.cpp:84` (de `8b89199`): `error: 'libintl_sprintf' is not a member of 'Glib::ustring'`.
+- **Causa:** no MinGW, o `libintl.h` (incluído por `glibmm/i18n.h`) define a macro `sprintf` → `libintl_sprintf`. Como `page-tabs.h` inclui `glibmm/ustring.h` *antes* de `i18n.h`, a declaração de `Glib::ustring::sprintf` não é renomeada, mas a chamada é. No Linux essa macro não existe, então o erro só aparece no Windows. O `file.cpp` do upstream usa a mesma função, mas com a ordem de includes oposta.
+- **Correção (Claude, área do Codex):** `Glib::ustring::compose(_("Page %1"), 1)`, que não depende de `sprintf`. O ramo `page->getLabel()` (`std::string`) foi envolvido em `Glib::ustring(...)` para o ternário ter um tipo único. Compila no build Linux.
+- **Aviso para os dois agentes:** não usar `Glib::ustring::sprintf` em código novo. Usar `Glib::ustring::compose` ou `Glib::ustring::format`.
+- Todos os outros arquivos C++ alterados pelo Inksvector (calculadora, deslocamento, borracha/segmento virtual, cores ICC, abas de documento, `build-styles.cpp`) já tinham compilado no Windows nessa execução, antes do erro. Só `paint-switch.cpp` não chegou a ser compilado.
+- Build disparado de novo por causa do pedido do Álefe de gerar o `.exe`.
