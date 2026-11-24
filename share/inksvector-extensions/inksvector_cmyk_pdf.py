@@ -62,7 +62,7 @@ def convert_pdf(source, output, profile, standard, dpi):
         executable, "-P-", "-dSAFER", "-dBATCH", "-dNOPAUSE", "-dPDFSTOPONERROR",
         "-sDEVICE=pdfwrite", "-sProcessColorModel=DeviceCMYK",
         "-sColorConversionStrategy=CMYK",
-        "-sOutputICCProfile=press.icc", "--permit-file-read=press.icc",
+        "-sDefaultCMYKProfile=press.icc", "-sOutputICCProfile=press.icc", "--permit-file-read=press.icc",
         "-dAutoRotatePages=/None", "-dDownsampleColorImages=false",
         "-dDownsampleGrayImages=false", f"-r{dpi}", f"-sOutputFile={output.name}",
     ]
@@ -79,6 +79,11 @@ def convert_pdf(source, output, profile, standard, dpi):
     )
     if result.returncode or not output.is_file():
         details = result.stdout.decode(errors="replace")[-2000:]
+        if standard == "pdfx3" and "pdfmark" in details and "10.02.1" in details:
+            raise inkex.AbortExtension(
+                "O Ghostscript 10.02.1 falhou ao gravar os metadados PDF/X-3. "
+                "Atualize o Ghostscript ou escolha PDF CMYK."
+            )
         raise inkex.AbortExtension(f"Falha na conversão para PDF CMYK.\n{details}")
     with output.open("rb") as stream:
         if stream.read(5) != b"%PDF-":
@@ -97,11 +102,14 @@ class CmykPdf(inkex.OutputExtension):
         profile = temp / "press.icc"
         profile.write_bytes(profile_data)
         intermediate = temp / "document.pdf"
+        os.environ["INKSVECTOR_CMYK_PRINT_PROFILE"] = str(profile)
         try:
             inkscape(self.options.input_file, export_filename=str(intermediate),
-                     export_dpi=self.options.dpi)
+                     export_extension="org.inkscape.output.pdf.capypdf", export_dpi=self.options.dpi)
         except ProgramRunError as exc:
             raise inkex.AbortExtension("O Inksvector não conseguiu preparar o PDF de origem.") from exc
+        finally:
+            os.environ.pop("INKSVECTOR_CMYK_PRINT_PROFILE", None)
         if not intermediate.is_file():
             raise inkex.AbortExtension("O PDF de origem não foi criado.")
 

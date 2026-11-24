@@ -10,6 +10,8 @@
  * Released under GNU GPL v2+, read the file 'COPYING' for more information.
  */
 
+#include <glibmm/fileutils.h>
+
 #include "build-drawing.h"
 #include "colors/cms/profile.h"
 #include "colors/color.h"
@@ -359,6 +361,20 @@ std::optional<capypdf::Color> Document::get_paint(SPIPaint const &paint, SPStyle
     return out;
 }
 
+// The print extension supplies a private copy of the destination profile to its
+// intermediate export process. Other exports keep their original ICC spaces.
+static std::shared_ptr<Colors::CMS::Profile> print_destination()
+{
+    static auto const destination = []() -> std::shared_ptr<Colors::CMS::Profile> {
+        auto path = g_getenv("INKSVECTOR_CMYK_PRINT_PROFILE");
+        if (!path || !*path) {
+            return {};
+        }
+        return Colors::CMS::Profile::create_from_data(Glib::file_get_contents(path));
+    }();
+    return destination;
+}
+
 capypdf::Color Document::get_color(Colors::Color const &color, std::optional<double> opacity)
 {
     auto space = color.getSpace();
@@ -369,6 +385,14 @@ capypdf::Color Document::get_color(Colors::Color const &color, std::optional<dou
     } else if (auto cmyk = std::dynamic_pointer_cast<Colors::Space::DeviceCMYK>(space)) {
         out.set_cmyk(color[0], color[1], color[2], color[3]);
     } else if (auto cms = std::dynamic_pointer_cast<Colors::Space::CMS>(space)) {
+        auto const profile = cms->getProfile();
+        if (profile && profile->getColorSpace() == cmsSigCmykData) {
+            auto const destination = print_destination();
+            if (destination && *profile == *destination) {
+                out.set_cmyk(color[0], color[1], color[2], color[3]);
+                return out;
+            }
+        }
         if (auto icc_id = get_icc_profile(cms)) {
             auto vals = color.getValues();
             out.set_icc(*icc_id, vals.data(), vals.size());
