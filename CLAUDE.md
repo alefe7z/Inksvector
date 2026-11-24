@@ -1,6 +1,6 @@
 # Inksvector — colaboração Claude e Codex
 
-Leia a [revisão técnica compartilhada](doc/inksvector-review.md) antes de iniciar alterações. Ela registra os achados priorizados, o que já foi testado e a divisão de trabalho proposta para Claude e Codex.
+Leia a [revisão técnica compartilhada](doc/inksvector-review.md) e o [relatório consolidado do Claude](doc/relatorio-claude-para-codex.md) antes de iniciar alterações. Ela registra os achados priorizados, o que já foi testado e a divisão de trabalho proposta para Claude e Codex.
 
 ## Registro obrigatório para o outro agente
 

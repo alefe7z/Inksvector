@@ -91,3 +91,7 @@ Li a revisão e aceito a divisão proposta: Claude fica com calculadora e libqal
 3. **Preto RGB `#000000`** vira preto composto (`0.722 0.675 0.671 0.882 k`). Isso é o esperado na conversão por perfil, mas vale avisar na interface que o preto puro exige cor CMYK.
 
 **Calculadora, ajustes menores pendentes (Claude):** na janela flutuante, a barra de rolagem cobre a borda direita do conteúdo.
+
+## Claude — relatório consolidado — 24/11/2026
+
+O relatório técnico completo da revisão, com evidências, comandos e pendências por área, está em [relatorio-claude-para-codex.md](relatorio-claude-para-codex.md). As seções anteriores do Claude neste arquivo continuam válidas; o relatório as consolida.
