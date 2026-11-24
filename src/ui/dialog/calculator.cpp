@@ -10,7 +10,9 @@
 #include "calculator.h"
 
 #include <algorithm>
+#include <atomic>
 #include <clocale>
+#include <cstdlib>
 #include <iterator>
 #include <optional>
 #include <thread>
@@ -52,6 +54,13 @@ KnownVariable *answer_variable = nullptr;
 bool definitions_loaded = false;
 
 /**
+ * True while exchange rates are downloaded in a worker thread. libqalculate is not thread-safe
+ * (a failed download adds messages to the shared engine), so no calculation may run meanwhile.
+ * Only the GTK main thread starts a download and evaluates expressions.
+ */
+std::atomic<bool> fetching_rates{false};
+
+/**
  * Create the global libqalculate engine once per process.
  *
  * The Calculator constructor calls setlocale(LC_ALL, "") and, on Windows, may set the LANGUAGE
@@ -71,6 +80,15 @@ void ensure_engine()
         current_language ? std::optional<std::string>(current_language) : std::nullopt;
 
     new ::Calculator();
+
+    // libqalculate keeps an idle calculation thread blocked in fread() on an internal pipe. If it
+    // still runs when the process exits, exit() deadlocks while flushing stdio streams. atexit
+    // handlers run before that flush, so stop the thread there (Qalculate! does the same).
+    std::atexit([] {
+        if (CALCULATOR) {
+            CALCULATOR->terminateThreads();
+        }
+    });
 
     std::setlocale(LC_ALL, saved_locale.c_str());
     if (saved_language) {
@@ -470,6 +488,10 @@ void CalculatorDialog::calculate()
     if (expression.find_first_not_of(" \t") == Glib::ustring::npos) {
         return;
     }
+    if (fetching_rates) {
+        show_message(_("Please wait until the exchange rates have been downloaded."), false);
+        return;
+    }
 
     EvaluationOptions eo = default_user_evaluation_options;
     eo.parse_options.angle_unit = ANGLE_UNITS[(std::min<guint>)(_angle_dropdown.get_selected(), 2)];
@@ -484,20 +506,36 @@ void CalculatorDialog::calculate()
     bool approximate = false;
     po.is_approximate = &approximate;
 
-    // "ans" refers to the previous result.
-    if (answer_variable && !_last_result.empty()) {
-        answer_variable->set(CALCULATOR->unlocalizeExpression(_last_result.raw(), eo.parse_options));
-    }
-
     CALCULATOR->clearMessages();
     std::string const input = CALCULATOR->unlocalizeExpression(expression.raw(), eo.parse_options);
-#if QALCULATE_MAJOR_VERSION >= 5
+
+    // Evaluate the expression (without any trailing "to ..." conversion) to a math structure. It
+    // becomes "ans" with full precision, independent of the base and precision of the display.
+    std::string from = input;
+    std::string to;
+    CALCULATOR->separateToExpression(from, to, eo, true);
+    MathStructure value;
+    MathStructure parsed_value;
+    CALCULATOR->calculate(&value, from, CALCULATION_TIMEOUT_MS, eo, &parsed_value);
+
     std::string parsed;
-    std::string const result = CALCULATOR->calculateAndPrint(input, CALCULATION_TIMEOUT_MS, eo, po, &parsed);
+    std::string result;
+    if (to.empty()) {
+        result = CALCULATOR->print(value, CALCULATION_TIMEOUT_MS, po);
+        PrintOptions parsed_po = po;
+        parsed_po.is_approximate = nullptr;
+        parsed_po.base = BASE_DECIMAL;
+        parsed_po.preserve_format = true;
+        parsed = CALCULATOR->print(parsed_value, CALCULATION_TIMEOUT_MS, parsed_po);
+    } else {
+        // Conversions ("to mm", "to hex", "to fraction", ...) are handled by calculateAndPrint.
+        CALCULATOR->clearMessages();
+#if QALCULATE_MAJOR_VERSION >= 5
+        result = CALCULATOR->calculateAndPrint(input, CALCULATION_TIMEOUT_MS, eo, po, &parsed);
 #else
-    std::string const parsed;
-    std::string const result = CALCULATOR->calculateAndPrint(input, CALCULATION_TIMEOUT_MS, eo, po);
+        result = CALCULATOR->calculateAndPrint(input, CALCULATION_TIMEOUT_MS, eo, po);
 #endif
+    }
 
     // Collect errors and warnings produced by the calculation.
     Glib::ustring messages;
@@ -522,6 +560,9 @@ void CalculatorDialog::calculate()
     _result_label.set_markup("<span size='x-large' weight='bold'>" + Glib::Markup::escape_text(sign + result) +
                              "</span>");
     _last_result = result;
+    if (answer_variable && !has_error) {
+        answer_variable->set(value);
+    }
     add_history(expression, (approximate ? "≈ " : "= ") + Glib::ustring(result));
     _history_cursor = -1;
 }
@@ -580,6 +621,10 @@ void CalculatorDialog::copy_result()
 
 void CalculatorDialog::update_exchange_rates()
 {
+    if (fetching_rates.exchange(true)) {
+        show_message(_("Exchange rates are already being downloaded."), false);
+        return;
+    }
     _rates_button.set_sensitive(false);
     show_message(_("Downloading exchange rates..."), false);
 
@@ -594,6 +639,7 @@ void CalculatorDialog::update_exchange_rates()
                     CALCULATOR->loadExchangeRates();
                 }
                 CALCULATOR->clearMessages();
+                fetching_rates = false;
                 if (auto alive = result->alive.lock(); alive && *alive) {
                     result->dialog->_rates_button.set_sensitive(true);
                     result->dialog->show_message(result->success ? _("Exchange rates updated.")
