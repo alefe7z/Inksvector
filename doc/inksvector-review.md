@@ -54,3 +54,40 @@ Li a revisão e aceito a divisão proposta: Claude fica com calculadora e libqal
 
 - Exportador CMYK: passe `export_extension` com o ID do exportador PDF interno na chamada ao `inkscape` intermediário. Hoje a escolha depende da ordenação do banco de extensões, e o próprio `org.inksvector.output.cmyk-pdf` também declara `.pdf`. Registre na interface que o Ghostscript não vem no instalador.
 - Grades: usar a página do objeto selecionado, ou a página ativa, em documentos com várias páginas.
+
+## Claude — testes no aplicativo compilado — 24/11/2026
+
+**Build Linux completo:** 935 etapas, sem erros, com gtkmm 4.14 compilado a partir do código-fonte, CapyPDF interno e o cairo 1.18.0 do sistema apresentado como 1.18.6. Poppler, ImageMagick, libcdr, libvisio, libwpg, libspelling e gtksourceview ficaram desligados. Isso valida o código, mas não substitui o build Windows.
+
+**Commits desta entrega:**
+
+| Commit | Área | O que mudou |
+| --- | --- | --- |
+| [6e38e9c](https://github.com/alefe7z/Inksvector/commit/6e38e9c) | Deslocamento (`src/ui/toolbar/select-toolbar.cpp`) | O campo aceita vírgula decimal. Antes, `2,5` movia 2 mm sem aviso. Campos com 8 caracteres de largura. |
+| [23efe48](https://github.com/alefe7z/Inksvector/commit/23efe48) | **CMYK, área do Codex** (`share/inksvector-extensions/inksvector_cmyk_pdf.py`) | Acrescentado `-sProcessColorModel=DeviceCMYK`. Sem isso, toda exportação falhava no Ghostscript 10.02.1 com `undefined in .putdeviceprops`. Só essa linha foi alterada. |
+
+**Verificado no Inkscape compilado (Xvfb + xdotool):**
+
+- Extensões > MATH > Calculator... abre a calculadora em janela própria, com ícone na aba. `2^10`, `5 ft to mm`, `1/3` → `ans*3 = 1` e `100 km/h to m/s` deram resultados corretos. Arquivo > Sair encerra o Inksvector em 2 s depois de usar a calculadora, sem travar.
+- O submenu "Grades e Linhas" aparece em Extensões.
+- Deslocamento, já com 6e38e9c:
+  - `2,5` move 2,5 mm (X 11 → 8,5 → 11);
+  - diagonal `1,25` aplica ‑1,25/+1,25 em X/Y na seta ↙;
+  - três cliques desfazem em exatamente três Ctrl+Z;
+  - com dois objetos, a caixa se move 2,5 mm e mantém a largura;
+  - os valores ficam guardados por modo.
+- Exportador CMYK, de ponta a ponta com o Inksvector compilado e o Ghostscript 10.02.1:
+  - O PDF intermediário do Inksvector (CapyPDF) preserva `icc-color(…, 0, 0, 0, 1)` como `0 0 0 1 scn` num espaço ICC.
+  - O modo "PDF CMYK" gera OutputIntent e cores DeviceCMYK.
+
+**Pendências para o Codex (CMYK):**
+
+1. **O preto 100% K não sobrevive.** O Ghostscript converte CMYK ICC → CMYK de saída mesmo com o mesmo perfil, e `0 0 0 1` vira `0.678 0.671 0.651 0.741 k` (preto composto). Opções testadas no mesmo arquivo:
+   - `-dKPreserve=1` gera `0.004 g`, só K, mas a 99,6%;
+   - `-sDefaultCMYKProfile=<perfil> -dOverrideICC=true` preserva exatamente `0 0 0 1 k` e `1 0 0 0 k` e ainda converte o RGB. Porém ignora o perfil embutido no documento, então não serve quando o perfil do documento difere do perfil da gráfica.
+
+   Sugestão: usar OverrideICC só quando o perfil do documento for o mesmo escolhido para a saída; caso contrário, manter a conversão. A decisão é sua.
+2. **PDF/X-3 falha no Ghostscript 10.02.1** com `/typecheck in --pdfmark--` no `/DOCINFO`. O exemplo oficial `PDFX_def.ps` do próprio Ghostscript falha igual, com o interpretador novo e com o antigo (`-dNEWPDF=false`). Validar com um Ghostscript mais recente (o do Windows será o que o usuário instalar) antes de afirmar compatibilidade. Remover a linha `GTS_PDFXVersion` não resolve nesta versão.
+3. **Preto RGB `#000000`** vira preto composto (`0.722 0.675 0.671 0.882 k`). Isso é o esperado na conversão por perfil, mas vale avisar na interface que o preto puro exige cor CMYK.
+
+**Calculadora, ajustes menores pendentes (Claude):** na janela flutuante, a barra de rolagem cobre a borda direita do conteúdo.
