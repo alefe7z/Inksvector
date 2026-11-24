@@ -52,10 +52,13 @@ namespace Inkscape::UI::Toolbar {
 
 namespace {
 
+constexpr double MAX_DISTANCE_MM = 1000000;
+
 /**
  * Parse a displacement distance typed as "2,5" or "2.5". The whole text must be a finite
  * number (surrounding spaces allowed); "2,5,7" or "2abc" are rejected instead of being
- * truncated to their numeric prefix.
+ * truncated to their numeric prefix. Values outside 0..MAX_DISTANCE_MM are rejected as well,
+ * since the spin button would restore the previous distance and a click would move by it.
  */
 std::optional<double> parse_distance(Glib::ustring const &input)
 {
@@ -69,7 +72,7 @@ std::optional<double> parse_distance(Glib::ustring const &input)
     while (*end == ' ' || *end == '\t') {
         ++end;
     }
-    if (*end != '\0') {
+    if (*end != '\0' || parsed < 0 || parsed > MAX_DISTANCE_MM) {
         return {};
     }
     return parsed;
@@ -147,7 +150,7 @@ SelectToolbar::SelectToolbar(Glib::RefPtr<Gtk::Builder> const &builder)
         grid->attach(*caption, 1, row);
 
         auto distance = Gtk::make_managed<Gtk::SpinButton>();
-        distance->set_range(0, 1000000);
+        distance->set_range(0, MAX_DISTANCE_MM);
         distance->set_increments(0.1, 1);
         distance->set_digits(3);
         distance->set_width_chars(8);
@@ -173,7 +176,7 @@ SelectToolbar::SelectToolbar(Glib::RefPtr<Gtk::Builder> const &builder)
                 return true;
             },
             false);
-        distance->set_value(prefs->getDoubleLimited(preference, 1.0, 0, 1000000));
+        distance->set_value(prefs->getDoubleLimited(preference, 1.0, 0, MAX_DISTANCE_MM));
         distance->set_tooltip_text(label + _(" (mm)"));
         grid->attach(*distance, 2, row);
         grid->attach(*Gtk::make_managed<Gtk::Label>("mm"), 3, row);
