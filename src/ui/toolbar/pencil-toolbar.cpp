@@ -219,8 +219,8 @@ void PencilToolbar::hide_extra_widgets(Glib::RefPtr<Gtk::Builder> const &builder
     if (_tool_is_pencil) {
         use_pencil_pressure();
     }
-    _mode_observer = prefs->createObserver(freehand_tool_name() + "/freehand-mode",
-                                         [this](auto const &entry) { update_mode(entry.getInt()); });
+    _mode_observer = Preferences::get()->createObserver(freehand_tool_name() + "/freehand-mode",
+                                                        [this](auto const &entry) { update_mode(entry.getInt()); });
 }
 
 PencilToolbar::~PencilToolbar() = default;
