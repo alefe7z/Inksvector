@@ -16,7 +16,9 @@
 
 #include "select-toolbar.h"
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 
 #include <glibmm/i18n.h>
 #include <gtkmm/grid.h>
@@ -120,7 +122,22 @@ SelectToolbar::SelectToolbar(Glib::RefPtr<Gtk::Builder> const &builder)
         distance->set_range(0, 1000000);
         distance->set_increments(0.1, 1);
         distance->set_digits(3);
-        distance->set_numeric(true);
+        distance->set_width_chars(8);
+        // Accept both "2,5" and "2.5": a numeric GtkSpinButton parses with LC_NUMERIC=C and
+        // silently drops everything after a comma, so "2,5" would move by 2 mm.
+        distance->signal_input().connect(
+            [distance](double &value) -> int {
+                auto text = distance->get_text().raw();
+                std::replace(text.begin(), text.end(), ',', '.');
+                char *end = nullptr;
+                double const parsed = g_ascii_strtod(text.c_str(), &end);
+                if (end == text.c_str() || !std::isfinite(parsed)) {
+                    return GTK_INPUT_ERROR;
+                }
+                value = parsed;
+                return true;
+            },
+            false);
         distance->set_value(prefs->getDoubleLimited(preference, 1.0, 0, 1000000));
         distance->set_tooltip_text(label + _(" (mm)"));
         grid->attach(*distance, 2, row);
