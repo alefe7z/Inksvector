@@ -22,7 +22,7 @@ jobs:
         with:
           msystem: UCRT64
           update: true
-          install: git
+          install: git zip
 
       - name: Prepare source and dependencies
         run: |
@@ -42,11 +42,88 @@ jobs:
           installers=(build/inkscape-*.exe)
           [[ "${#installers[@]}" -eq 1 && -s "${installers[0]}" ]]
           mkdir -p dist
-          cp "${installers[0]}" dist/
-          (cd dist && sha256sum -- *.exe > SHA256SUMS.txt)
+          cp "${installers[0]}" "dist/Inksvector-$(git rev-parse --short HEAD)-x64-instalador.exe"
+
+      - name: Package the portable version
+        run: |
+          set -euo pipefail
+          # dist-win-exe already ran install/strip into stage/, the same tree the installer packs.
+          [[ -f stage/bin/inkscape.exe && -f stage/bin/inkscape.com ]]
+          [[ -d stage/share/qalculate && -d stage/share/inkscape/extensions ]]
+          ls stage/bin/libqalculate-*.dll
+          name="Inksvector-$(git rev-parse --short HEAD)-x64-portatil"
+          rm -rf "portable/$name"
+          mkdir -p portable
+          cp -a stage "portable/$name"
+          printf '%s\r\n' \
+            "Inksvector - versao portatil (Windows x64)" \
+            "" \
+            "Nao precisa instalar. Extraia a pasta inteira e abra:" \
+            "    bin\\inkscape.exe" \
+            "" \
+            "Mantenha a estrutura de pastas: o programa usa as DLLs de bin\\ e os recursos de share\\." \
+            "As preferencias ficam no perfil do usuario (%APPDATA%\\inkscape), como na versao instalada." \
+            "O Exportar PDF CMYK requer o Ghostscript 10 instalado e no PATH." \
+            > "portable/$name/LEIA-ME.txt"
+          (cd portable && zip -qr -9 "../dist/$name.zip" "$name")
+          (cd dist && sha256sum -- *.exe *.zip > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@v4
         with:
           name: inksvector-windows-x64
           path: dist/
           if-no-files-found: error
+
+  validate:
+    # A fresh Windows runner without MSYS2 on PATH: only the files shipped in the artifacts are used.
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: inksvector-windows-x64
+          path: dist
+
+      - name: Verify checksums
+        run: |
+          Set-Location dist
+          foreach ($line in Get-Content SHA256SUMS.txt) {
+            $hash, $file = $line -split '\s+\*?', 2
+            $actual = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLower()
+            if ($actual -ne $hash) { throw "SHA-256 mismatch for $file" }
+            Write-Host "OK $file $actual"
+          }
+
+      - name: Run the portable version with a minimal PATH
+        run: |
+          $env:PATH = "C:\Windows\System32;C:\Windows;C:\Windows\System32\Wbem"
+          if (Get-Command gcc -ErrorAction SilentlyContinue) { throw "MSYS2 tools are still on PATH" }
+          $zip = Get-ChildItem dist\*-portatil.zip | Select-Object -First 1
+          Expand-Archive $zip.FullName -DestinationPath portable
+          $root = Get-ChildItem portable -Directory | Select-Object -First 1
+          $com = Join-Path $root.FullName 'bin\inkscape.com'
+          & $com --version
+          if ($LASTEXITCODE -ne 0) { throw "inkscape --version failed: $LASTEXITCODE" }
+          Set-Content test.svg '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="#e00"/></svg>'
+          & $com test.svg --export-type=png --export-filename=portable.png
+          if (-not (Test-Path portable.png) -or (Get-Item portable.png).Length -eq 0) { throw "portable export failed" }
+          if (-not (Test-Path (Join-Path $root.FullName 'share\qalculate'))) { throw "Qalculate definitions missing" }
+          Write-Host "Portable version runs and exports PNG"
+
+      - name: Install silently and run the installed version
+        run: |
+          $env:PATH = "C:\Windows\System32;C:\Windows;C:\Windows\System32\Wbem"
+          $installer = Get-ChildItem dist\*-instalador.exe | Select-Object -First 1
+          $target = 'C:\InksvectorTest'
+          $p = Start-Process $installer.FullName -ArgumentList '/S', "/D=$target" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "installer exit code $($p.ExitCode)" }
+          & "$target\bin\inkscape.com" --version
+          if ($LASTEXITCODE -ne 0) { throw "installed inkscape --version failed: $LASTEXITCODE" }
+          Set-Content test.svg '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="#e00"/></svg>'
+          & "$target\bin\inkscape.com" test.svg --export-type=png --export-filename=installed.png
+          if (-not (Test-Path installed.png) -or (Get-Item installed.png).Length -eq 0) { throw "installed export failed" }
+          Write-Host "Installed version runs and exports PNG"

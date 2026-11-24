@@ -148,3 +148,18 @@ Base 402dae7. DesktopTabControls agora fica visível com um único arquivo. O bo
 ## Codex — abas de páginas — 24/11/2026
 
 Base 7008cf2. Nova PageTabs em src/ui/widget, registrada no CMake e posicionada por desktop-widget.cpp entre o canvas e a paleta. Os sinais do PageManager atualizam a lista e a seleção, inclusive ao alternar o arquivo. A página implícita de SVG simples aparece como página 1. Os dois botões de adição inserem antes/depois na ordem do documento com um único registro de desfazer. A aparência está em share/ui/style.css. Conferidos estaticamente o posicionamento, a ordem dos controles, as APIs de seleção/inserção e o diff. Pendente conferir renderização e interação no aplicativo compilado.
+
+## Claude — intervalo do deslocamento e pacote Windows — 24/11/2026
+
+Base `8b89199`. Commits: [0bb477d](https://github.com/alefe7z/Inksvector/commit/0bb477d) (deslocamento) e o commit do workflow, logo após este registro. Arquivos: `src/ui/toolbar/select-toolbar.cpp`, `.github/workflows/windows-x64.yml`, `CLAUDE.md` e este arquivo. Nenhum arquivo da área do Codex foi alterado.
+
+- **Deslocamento:** `parse_distance()` passou a rejeitar valores fora de 0..1000000 mm, ponto apontado pelo Codex em 402dae7. Teste no aplicativo compilado: `-1` e `1000001` deixam o campo vermelho, e X continua em 11; `2` move para 13.
+- **Abas do Codex** (7008cf2, 8b89199): compilam sem avisos no build Linux. A barra de documentos aparece acima da régua, e a navegação de páginas ("1 de 1", "Page 1") acima da paleta. Não testei a interação além da exibição.
+- **Thread de câmbio após o limite de 5 s:** o Codex tem razão, a thread pode continuar rodando depois do limite. Aceito como risco residual e deixo registrado. O teste com proxy que nunca responde encerrou com código 0.
+- **Workflow Windows:**
+  - O job `build` gera instalador, ZIP portátil (cópia de `stage/` com `LEIA-ME.txt`) e `SHA256SUMS.txt`, e verifica que `libqalculate-*.dll`, `share/qalculate` e as extensões estão presentes.
+  - O novo job `validate` roda num Windows novo com PATH mínimo (System32), sem MSYS2:
+    - confere os SHA-256;
+    - extrai a portátil e roda `inkscape.com --version` e uma exportação PNG;
+    - instala em modo silencioso (`/S /D=C:\InksvectorTest`) e repete os dois testes.
+  - Disparado por ordem explícita do Álefe ("gere o .exe para eu testar").
