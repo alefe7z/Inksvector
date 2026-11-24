@@ -15,6 +15,7 @@
 #include "enums.h"
 #include "inkscape.h"
 #include "inkscape-window.h"
+#include "ui/dialog/calculator.h"
 #include "ui/dialog/clonetiler.h"
 #include "ui/dialog/debug.h"
 #include "ui/dialog/dialog-data.h"
@@ -103,6 +104,7 @@ std::unique_ptr<DialogBase> DialogContainer::dialog_factory(Glib::ustring const 
 {
     // clang-format off
          if (dialog_type == "AlignDistribute")    return std::make_unique<ArrangeDialog>();
+    else if (dialog_type == "Calculator")         return std::make_unique<CalculatorDialog>();
     else if (dialog_type == "CloneTiler")         return std::make_unique<CloneTiler>();
     else if (dialog_type == "DebugWindow")        return std::make_unique<Debug>();
     else if (dialog_type == "DocumentProperties") return std::make_unique<DocumentProperties>();

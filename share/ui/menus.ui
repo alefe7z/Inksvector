@@ -1233,6 +1233,16 @@
       </section>
       <section id="effect-menu-effects"/>
       <section>
+        <submenu id="math-menu">
+          <attribute name="label" translatable="yes">MATH</attribute>
+          <item>
+            <attribute name="label" translatable="yes">_Calculator...</attribute>
+            <attribute name="action">win.math-calculator</attribute>
+            <attribute name="icon">dialog-calculator</attribute>
+          </item>
+        </submenu>
+      </section>
+      <section>
         <item>
           <attribute name="label" translatable="yes">Manage Extensions...</attribute>
           <attribute name="action">app.org.inkscape.extension.manager</attribute>

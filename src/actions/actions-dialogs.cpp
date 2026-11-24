@@ -33,6 +33,8 @@ const Glib::ustring SECTION = NC_("Action Section", "Dialog");
 static const std::vector<std::vector<Glib::ustring>> raw_data_dialogs = {
     // clang-format off
     {"win.dialog-open('AlignDistribute')",    N_("Open Align and Distribute"), SECTION,  N_("Align and distribute objects")                                                           },
+    {"win.dialog-open('Calculator')",         N_("Open Calculator"),           SECTION,  N_("Scientific calculator with units, conversions and constants (Qalculate)")                },
+    {"win.math-calculator",                   N_("Calculator"),                SECTION,  N_("Open the calculator in its own window")                                                  },
     {"win.dialog-open('CloneTiler')",         N_("Open Clone Tiler"),          SECTION,  N_("Create multiple clones of selected object, arranging them into a pattern or scattering") },
     {"win.dialog-open('DebugWindow')",        N_("Open Debugger"),             SECTION,  N_("Open debugger")                                                                      },
     {"win.dialog-open('DocumentProperties')", N_("Open Document Properties"),  SECTION,  N_("Edit properties of this document (to be saved with the document)")                       },
@@ -104,6 +106,20 @@ dialog_open(const Glib::VariantBase& value, InkscapeWindow *win)
 }
 
 /**
+ * Open the calculator (Extensions > MATH) in its own floating window.
+ */
+void
+open_calculator(InkscapeWindow *win)
+{
+    SPDesktop *dt = win ? win->get_desktop() : nullptr;
+    if (!dt) {
+        show_output("open_calculator: no desktop!");
+        return;
+    }
+    dt->getContainer()->new_floating_dialog("Calculator");
+}
+
+/**
  * Toggle between showing and hiding dialogs.
  */
 void
@@ -146,6 +162,7 @@ void add_actions_dialogs(InkscapeWindow *win)
     // clang-format off
     win->add_action_with_parameter( "dialog-open",  String, sigc::bind(sigc::ptr_fun(&dialog_open),   win));
     win->add_action(                "dialog-toggle",        sigc::bind(sigc::ptr_fun(&dialog_toggle), win));
+    win->add_action(                "math-calculator",      sigc::bind(sigc::ptr_fun(&open_calculator), win));
     // clang-format on
 
     // macOS automatically uses app.preferences in the application menu

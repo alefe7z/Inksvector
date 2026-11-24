@@ -51,6 +51,7 @@ std::span<const DialogData> get_dialog_data_list() {
     {"FilterEffects",      _("Filter _Editor"),        INKSCAPE_ICON("dialog-filters"),              DialogData::EffectsActions, ScrollProvider::NOPROVIDE },
     {"ExtensionsGallery",  _("_Extension Gallery"),    INKSCAPE_ICON("dialog-extensions"),           DialogData::EffectsActions, ScrollProvider::NOPROVIDE },
     {"CloneTiler",         _("Tiled Clones"),          INKSCAPE_ICON("dialog-tile-clones"),          DialogData::EffectsActions, ScrollProvider::NOPROVIDE },
+    {"Calculator",         _("_Calculator"),           INKSCAPE_ICON("dialog-calculator"),           DialogData::EffectsActions, ScrollProvider::NOPROVIDE },
 
     // ASSETS ----------------------------------------
     {"Symbols",            _("S_ymbols"),              INKSCAPE_ICON("symbols"),                     DialogData::Assets,         ScrollProvider::PROVIDE   },

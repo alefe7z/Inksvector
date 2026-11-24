@@ -119,6 +119,7 @@ target_sources(inkscape_base PRIVATE
 	dialog/align-and-distribute.cpp
 	dialog/attrdialog.cpp
 	dialog/calligraphic-profile-rename.cpp
+	dialog/calculator.cpp
 	dialog/clonetiler.cpp
 	dialog/color-item.cpp
 	dialog/command-palette.cpp
@@ -362,6 +363,7 @@ target_sources(inkscape_base PRIVATE
 	dialog/calligraphic-profile-rename.h
 	dialog/choose-file.h
 	dialog/choose-file-utils.h
+	dialog/calculator.h
 	dialog/clonetiler.h
 	dialog/color-item.h
 	dialog/command-palette.h

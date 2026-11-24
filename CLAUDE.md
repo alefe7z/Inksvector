@@ -18,6 +18,15 @@ O commit `885673f94449367327d6e87536ae64132b802186` adicionou o botão de desloc
 - Use milímetros e mantenha valores independentes por modo, seleção múltipla e um passo de desfazer por clique.
 - A prévia em português era ilustrativa. Teste a interface compilada, inclusive entrada decimal, seleção múltipla, sinais dos eixos, repetição e Ctrl+Z.
 
+## Calculadora (Extensões > MATH)
+
+Menu Extensões > MATH > Calculator..., que abre uma janela flutuante (`win.math-calculator`). O diálogo também pode ser acoplado (`win.dialog-open('Calculator')`). O motor é a libqalculate, a mesma biblioteca do Qalculate!. A interface GTK do Qalculate! é GTK3 e não pode ser embutida no Inkscape GTK4. Por isso o diálogo é nativo GTK4 e chama a biblioteca.
+
+- Código em `src/ui/dialog/calculator.{h,cpp}`. Registro em `src/ui/dialog/dialog-data.cpp`, `src/ui/dialog/dialog-container.cpp` e `src/actions/actions-dialogs.cpp`. Menu em `share/ui/menus.ui`. Ícone `dialog-calculator` em `share/icons/hicolor/{scalable,symbolic}/actions/`.
+- Dependência obrigatória `libqalculate>=4.0` em `CMakeScripts/DefineDependsandFlags.cmake`. No MSYS2, o pacote `$ARCH-libqalculate` fica em `buildtools/msys2installdeps.sh`. O pacote Windows (`CMakeScripts/InstallMSYS2.cmake`) copia `libqalculate-*.dll`, `share/qalculate` (definições de unidades, funções e moedas, procuradas em `..\share\qalculate` a partir do `.exe`), as traduções e a licença.
+- O construtor da libqalculate chama `setlocale(LC_ALL, "")` e pode definir `LANGUAGE` no Windows. `ensure_engine()` restaura os dois. Mantenha esse cuidado.
+- Testado fora do Inkscape (gtkmm 4.10, libqalculate 4.9, Ubuntu), com stubs de `DialogBase` e `Preferences`: aritmética, `ans`, unidades, bases, graus, modo exato, vírgula decimal, precisão, histórico e teclado. Ainda falta testar a janela no Inkscape compilado no Windows.
+
 ## Entrega Windows x64
 
 O GitHub Actions usa MSYS2 UCRT64, CMake, Ninja e NSIS. A execução de referência da base concluiu com sucesso em https://github.com/alefe7z/Inksvector/actions/runs/45382395012. A execução com deslocamento está em https://github.com/alefe7z/Inksvector/actions/runs/45403533374. Consulte o status e os logs antes de editar o workflow.

@@ -375,6 +375,10 @@ if(NOT (GTKMM_FOUND AND GLIBMM_FOUND))
 endif()
 list(APPEND INKSCAPE_LIBS GLibmm::GLibmm GTKmm::GTKmm)
 
+# Calculator dialog (Extensions > MATH) uses libqalculate as its math engine.
+pkg_check_modules(QALCULATE REQUIRED IMPORTED_TARGET libqalculate>=4.0)
+list(APPEND INKSCAPE_LIBS PkgConfig::QALCULATE)
+
 if(WITH_LIBSPELLING)
     pkg_check_modules(LIBSPELLING IMPORTED_TARGET libspelling-1)
     if("${LIBSPELLING_FOUND}")

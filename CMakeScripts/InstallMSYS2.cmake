@@ -118,6 +118,7 @@ if(WIN32)
     ${MINGW_BIN}/libpoppler-glib-[0-9]*.dll
     ${MINGW_BIN}/libpotrace-[0-9]*.dll
     ${MINGW_BIN}/libpsl-[0-9]*.dll
+    ${MINGW_BIN}/libqalculate-[0-9]*.dll
     ${MINGW_BIN}/libquadmath-[0-9]*.dll
     ${MINGW_BIN}/libraqm-[0-9]*.dll
     ${MINGW_BIN}/libreadline8.dll
@@ -222,11 +223,19 @@ if(WIN32)
       FILES_MATCHING
       PATTERN "*glib20.mo"
       PATTERN "*gtk40.mo"
-      PATTERN "*libspelling-1.mo")
+      PATTERN "*libspelling-1.mo"
+      PATTERN "*libqalculate.mo")
   endforeach()
 
   install(DIRECTORY ${MINGW_PATH}/share/poppler
     DESTINATION share)
+
+  # libqalculate looks for its definitions in ..\share\qalculate next to the executable.
+  install(DIRECTORY ${MINGW_PATH}/share/qalculate
+    DESTINATION share)
+  install(FILES ${MINGW_PATH}/share/licenses/libqalculate/COPYING
+    DESTINATION share/licenses/libqalculate
+    OPTIONAL)
 
   install(DIRECTORY ${MINGW_PATH}/share/glib-2.0/schemas
     DESTINATION share/glib-2.0)
