@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <optional>
 
 #include <glibmm/i18n.h>
 #include <gtkmm/grid.h>
@@ -48,6 +49,33 @@ using Inkscape::Util::Quantity;
 using Inkscape::DocumentUndo;
 
 namespace Inkscape::UI::Toolbar {
+
+namespace {
+
+/**
+ * Parse a displacement distance typed as "2,5" or "2.5". The whole text must be a finite
+ * number (surrounding spaces allowed); "2,5,7" or "2abc" are rejected instead of being
+ * truncated to their numeric prefix.
+ */
+std::optional<double> parse_distance(Glib::ustring const &input)
+{
+    auto text = input.raw();
+    std::replace(text.begin(), text.end(), ',', '.');
+    char *end = nullptr;
+    double const parsed = g_ascii_strtod(text.c_str(), &end);
+    if (end == text.c_str() || !std::isfinite(parsed)) {
+        return {};
+    }
+    while (*end == ' ' || *end == '\t') {
+        ++end;
+    }
+    if (*end != '\0') {
+        return {};
+    }
+    return parsed;
+}
+
+} // namespace
 
 SelectToolbar::SelectToolbar()
     : SelectToolbar{create_builder("toolbar-select.ui")}
@@ -123,18 +151,25 @@ SelectToolbar::SelectToolbar(Glib::RefPtr<Gtk::Builder> const &builder)
         distance->set_increments(0.1, 1);
         distance->set_digits(3);
         distance->set_width_chars(8);
+        // Keep the last valid distance when the text cannot be parsed (the default policy would
+        // store 0 and overwrite the saved preference).
+        distance->set_update_policy(Gtk::SpinButton::UpdatePolicy::IF_VALID);
+        distance->signal_changed().connect([distance] {
+            if (parse_distance(distance->get_text())) {
+                distance->remove_css_class("error");
+            }
+        });
         // Accept both "2,5" and "2.5": a numeric GtkSpinButton parses with LC_NUMERIC=C and
         // silently drops everything after a comma, so "2,5" would move by 2 mm.
         distance->signal_input().connect(
             [distance](double &value) -> int {
-                auto text = distance->get_text().raw();
-                std::replace(text.begin(), text.end(), ',', '.');
-                char *end = nullptr;
-                double const parsed = g_ascii_strtod(text.c_str(), &end);
-                if (end == text.c_str() || !std::isfinite(parsed)) {
+                auto const parsed = parse_distance(distance->get_text());
+                if (!parsed) {
+                    distance->add_css_class("error");
                     return GTK_INPUT_ERROR;
                 }
-                value = parsed;
+                distance->remove_css_class("error");
+                value = *parsed;
                 return true;
             },
             false);
@@ -151,12 +186,21 @@ SelectToolbar::SelectToolbar(Glib::RefPtr<Gtk::Builder> const &builder)
             auto direction = directions[first_direction + column];
             auto button = Gtk::make_managed<Gtk::Button>(direction.arrow);
             button->set_tooltip_text(_(direction.tooltip));
+            // Keep the focus in the distance field, so a click sees exactly what was typed.
+            button->set_focus_on_click(false);
             grid->attach(*button, 4 + column, row);
             button->signal_clicked().connect([this, distance, direction] {
                 if (!_desktop || _desktop->getSelection()->isEmpty()) {
                     return;
                 }
 
+                // Never move by a stale or partial value: an invalid entry is flagged instead.
+                if (!parse_distance(distance->get_text())) {
+                    distance->add_css_class("error");
+                    distance->error_bell();
+                    distance->grab_focus();
+                    return;
+                }
                 distance->update();
                 auto const pixels = Quantity::convert(distance->get_value(), "mm", "px");
                 if (pixels > 0) {
