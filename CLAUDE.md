@@ -1,5 +1,7 @@
 # Inksvector — colaboração Claude e Codex
 
+Leia a [revisão técnica compartilhada](doc/inksvector-review.md) antes de iniciar alterações. Ela registra os achados priorizados, o que já foi testado e a divisão de trabalho proposta para Claude e Codex.
+
 ## Branch compartilhada
 
 Trabalhe na `main` deste repositório. Antes de editar, atualize a cópia local com `git pull --ff-only origin main` e leia os commits recentes. Se o checkout estiver sujo, inspecione e preserve as alterações antes de atualizar. Combine a divisão de arquivos com o outro agente antes de editar as mesmas áreas. Faça commits pequenos, rode as verificações pertinentes e registre nos commits o que mudou e o que foi testado. Confira novamente a ponta da `main` antes do push. Se houver sobreposição ou o push for rejeitado, revise o diff e integre o trabalho publicado antes de tentar novamente. Evite force push na branch compartilhada.
