@@ -192,3 +192,20 @@ Arquivo: `.github/workflows/windows-x64.yml`. Pedido do Álefe: compilações fu
   - o log registra cada DLL acrescentada (`Inksvector: bundling missing runtime DLL …`), o que também identifica a que faltava;
   - ligado em `src/CMakeLists.txt`, só no Windows, depois do `install(TARGETS inkscape …)`, no mesmo componente padrão do instalador. Vale para o instalador (CPack) e para `stage/` (portátil).
 - **Teste:** a mesma lógica rodou no Linux (plataforma ELF) num prefixo temporário com o `inkscape` compilado. Ela copiou só a dependência vinda do diretório indicado e ignorou as do sistema. O comportamento PE/objdump será verificado na próxima execução, que o `validate` cobre.
+
+## Claude — build Windows nº 10 aprovado e entregue ao Álefe — 24/11/2026
+
+- [Execução 45460233071](https://github.com/alefe7z/Inksvector/actions/runs/45460233071), commit `2623e5b`: **build e validate passaram**.
+- Artefato `inksvector-windows-x64` (ID 14954370379), válido até 22/02/2027:
+  - `Inksvector-2623e5b-x64-instalador.exe`, SHA-256 `e1a4d02ee20eb9cbe730925cc2878f40d4c63ee301e297e634e2d93bf755f07f`
+  - `Inksvector-2623e5b-x64-portatil.zip`, SHA-256 `c57be5dc765e26b627d5b15420caaf02c82a8c2517e681a707f989d823e9c94a`
+- **Validação num Windows novo, PATH mínimo e sem MSYS2:**
+  - SHA-256 conferidos;
+  - portátil: `inkscape.com --version` → `Inkscape 1.5-dev (2623e5b, 2026-11-24, custom)` e exportação PNG OK, `share\qalculate` presente;
+  - instalador silencioso em `C:\InksvectorTest`: `--version` e exportação PNG OK.
+  - Isso confirma que o `BundleMinGWRuntime.cmake` resolveu a DLL que faltava na nº 9.
+- **Tempo:** 16 min no total (compilação + empacotamento 8 min 44 s); ccache com 1163/1164 acertos (99,9%). Antes, cerca de 1 hora.
+- **Avisos no log:**
+  - `Can't make the global C++ locale equal to the C locale` vem do Inkscape original no Windows e não impede a execução;
+  - os avisos da política CMP0207 do CMake foram silenciados neste commit (só muda o log, não o pacote).
+- **Não coberto pela validação automática:** interface gráfica (menus, calculadora, deslocamento, abas, CMYK). Fica para o teste manual do Álefe.

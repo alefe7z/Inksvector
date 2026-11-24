@@ -9,6 +9,11 @@
 #
 # Expects INKSVECTOR_MINGW_BIN to be set by a preceding install(CODE) rule.
 
+# CMake 4.x: normalize paths before matching (silences one warning per system DLL).
+if(POLICY CMP0207)
+    cmake_policy(SET CMP0207 NEW)
+endif()
+
 if(NOT INKSVECTOR_MINGW_BIN)
     message(FATAL_ERROR "BundleMinGWRuntime: INKSVECTOR_MINGW_BIN is not set")
 endif()
