@@ -60,7 +60,8 @@ def convert_pdf(source, output, profile, standard, dpi):
     # Paths controlled by the extension are relative to its private temporary directory.
     args = [
         executable, "-P-", "-dSAFER", "-dBATCH", "-dNOPAUSE", "-dPDFSTOPONERROR",
-        "-sDEVICE=pdfwrite", "-sColorConversionStrategy=CMYK",
+        "-sDEVICE=pdfwrite", "-sProcessColorModel=DeviceCMYK",
+        "-sColorConversionStrategy=CMYK",
         "-sOutputICCProfile=press.icc", "--permit-file-read=press.icc",
         "-dAutoRotatePages=/None", "-dDownsampleColorImages=false",
         "-dDownsampleGrayImages=false", f"-r{dpi}", f"-sOutputFile={output.name}",
