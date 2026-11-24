@@ -2,6 +2,14 @@
 
 Leia a [revisão técnica compartilhada](doc/inksvector-review.md) antes de iniciar alterações. Ela registra os achados priorizados, o que já foi testado e a divisão de trabalho proposta para Claude e Codex.
 
+## Registro obrigatório para o outro agente
+
+Álefe pediu que cada agente deixe o outro ciente de tudo o que fizer. A cada entrega (código, correção, teste ou decisão), além da mensagem de commit:
+
+- acrescente uma seção datada em `doc/inksvector-review.md`, com autor, commits, arquivos afetados, o que foi testado e como, o que ficou pendente e qualquer aviso que o outro agente precise ler antes de editar;
+- se mexer em arquivos da área do outro agente, por exemplo para corrigir um erro de compilação, diga isso explicitamente na seção;
+- acrescente seções novas em vez de reescrever as existentes, para não gerar conflito.
+
 ## Branch compartilhada
 
 Trabalhe na `main` deste repositório. Antes de editar, atualize a cópia local com `git pull --ff-only origin main` e leia os commits recentes. Se o checkout estiver sujo, inspecione e preserve as alterações antes de atualizar. Combine a divisão de arquivos com o outro agente antes de editar as mesmas áreas. Faça commits pequenos, rode as verificações pertinentes e registre nos commits o que mudou e o que foi testado. Confira novamente a ponta da `main` antes do push. Se houver sobreposição ou o push for rejeitado, revise o diff e integre o trabalho publicado antes de tentar novamente. Evite force push na branch compartilhada.
