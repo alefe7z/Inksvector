@@ -186,6 +186,7 @@ public:
 
     void set_document(SPDocument* document) override {
         _document = document;
+        _flat_color.get_picker().set_document(document);
         _mesh.set_document(document);
         _swatch.set_document(document);
         _pattern.set_document(document);
@@ -531,7 +532,7 @@ void PaintSwitchImpl::switch_paint_mode(PaintMode mode) {
 }
 
 void PaintSwitchImpl::set_color(const Colors::Color& color) {
-    _color->set(color);
+    _flat_color.get_picker().set_color(color);
 }
 
 sigc::signal<void (const Colors::Color&)> PaintSwitchImpl::get_flat_color_changed() {

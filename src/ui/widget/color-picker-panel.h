@@ -16,6 +16,7 @@
 #include "colors/color.h"
 
 class SPDesktop;
+class SPDocument;
 
 namespace Inkscape::UI::Widget {
 
@@ -27,6 +28,7 @@ public:
     static std::unique_ptr<ColorPickerPanel> create(Colors::Space::Type space, PlateType type, std::shared_ptr<Colors::ColorSet> color);
 
     virtual void set_desktop(SPDesktop* dekstop) = 0;
+    virtual void set_document(SPDocument *document) = 0;
     virtual void set_color(const Colors::Color& color) = 0;
     // request color type/space change
     virtual void set_picker_type(Colors::Space::Type type) = 0;

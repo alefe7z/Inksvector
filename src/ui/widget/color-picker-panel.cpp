@@ -18,6 +18,9 @@
 #include "color-page.h"
 #include "color-wheel.h"
 #include "desktop.h"
+#include "document.h"
+#include "colors/document-cms.h"
+#include "colors/spaces/cms.h"
 #include "generic/icon-combobox.h"
 #include "generic/spin-button.h"
 #include "inkscape.h"
@@ -26,10 +29,12 @@
 #include "colors/spaces/base.h"
 #include "ui/tools/dropper-tool.h"
 #include "ui/util.h"
+#include "util/signal-blocker.h"
 
 const std::string spinner_pattern = "999.9%";
 constexpr int ROW_PLATE = 0; // color plate, if any
 constexpr int ROW_EDIT = 1;  // dropper, rgb edit box, color type selector
+constexpr int ICC_FIRST_ID = 1000;
 constexpr int ROW_PAGE = 3;  // color page with sliders
 
 namespace Inkscape::UI::Widget {
@@ -63,7 +68,7 @@ public:
     }
 
     void create_color_page(Space::Type type, PlateType plate_type) {
-        auto space = Manager::get().find(type);
+        std::shared_ptr<Space::AnySpace> space = _profile ? _profile : Manager::get().find(type);
         _page = std::make_unique<ColorPage>(space, _color_set);
         _page->show_expander(false);
         _page->set_spinner_size_pattern(spinner_pattern);
@@ -100,6 +105,8 @@ public:
     }
 
     void set_desktop(SPDesktop* dekstop) override;
+    void set_document(SPDocument *document) override;
+    void refresh_profiles();
     void set_color(const Color& color) override;
     void set_picker_type(Space::Type type) override;
     void set_plate_type(PlateType plate) override;
@@ -139,6 +146,14 @@ public:
     PlateType _plate_type;
     std::unique_ptr<ColorPage> _page;
     ColorWheel* _plate = nullptr;
+    unsigned int _standard_spaces = 0;
+    std::vector<std::shared_ptr<Space::CMS>> _document_profiles;
+    std::shared_ptr<Space::CMS> _profile;
+    SPDocument *_document = nullptr;
+    sigc::scoped_connection _profiles_changed;
+    sigc::scoped_connection _profile_modified;
+    sigc::scoped_connection _space_selected;
+    sigc::scoped_connection _preview_changed;
     sigc::scoped_connection _color_picking;
     SPDesktop* _desktop = nullptr;
     sigc::signal<void (Space::Type)> _color_space_changed;
@@ -155,7 +170,7 @@ ColorPickerPanelImpl::ColorPickerPanelImpl(Space::Type space, PlateType type, st
     _color_set(color),
     _plate_type(type)
 {
-    _color_set->signal_changed.connect([this]() { update_color(); });
+    _preview_changed = _color_set->signal_changed.connect([this] { update_color(); });
 
     set_row_spacing(0);
     set_column_spacing(0);
@@ -163,6 +178,7 @@ ColorPickerPanelImpl::ColorPickerPanelImpl(Space::Type space, PlateType type, st
     // list available color space types
     for (auto&& meta : Manager::get().spaces(Space::Traits::Picker)) {
         _spaces.add_row(meta->getIcon(), _(meta->getShortName().c_str()), int(meta->getType()));
+        ++_standard_spaces;
     }
     _spaces.refilter();
     _spaces.set_tooltip_text(_("Select color picker type"));
@@ -170,9 +186,13 @@ ColorPickerPanelImpl::ColorPickerPanelImpl(Space::Type space, PlateType type, st
     // otherwise they will be rendered black&white
     _spaces.add_css_class("regular");
     _spaces.set_active_by_id(int(space));
-    _spaces.signal_changed().connect([this](int id) {
-        auto type = static_cast<Space::Type>(id);
-        if (type != Space::Type::NONE) {
+    _space_selected = _spaces.signal_changed().connect([this](int id) {
+        if (id >= ICC_FIRST_ID && static_cast<std::size_t>(id - ICC_FIRST_ID) < _document_profiles.size()) {
+            _profile = _document_profiles[id - ICC_FIRST_ID];
+            switch_page(Space::Type::CMYK, _plate_type);
+            _color_space_changed.emit(Space::Type::CMYK);
+        } else if (id >= 0 && id < ICC_FIRST_ID && id != int(Space::Type::NONE)) {
+            auto const type = static_cast<Space::Type>(id);
             set_picker_type(type);
             _color_space_changed.emit(type);
         }
@@ -233,11 +253,59 @@ void ColorPickerPanelImpl::set_desktop(SPDesktop* dekstop) {
     _desktop = dekstop;
 }
 
+void ColorPickerPanelImpl::set_document(SPDocument *document)
+{
+    if (_document == document) {
+        return;
+    }
+    _profiles_changed.disconnect();
+    _profile_modified.disconnect();
+    _document = document;
+    if (_document) {
+        auto &cms = _document->getDocumentCMS();
+        _profiles_changed = cms.connectChanged(sigc::mem_fun(*this, &ColorPickerPanelImpl::refresh_profiles));
+        _profile_modified = cms.connectModified([this](auto const &) { refresh_profiles(); });
+    }
+    refresh_profiles();
+}
+
+void ColorPickerPanelImpl::refresh_profiles()
+{
+    auto const block = SignalBlocker(_space_selected);
+    auto const previous = _profile;
+    _profile.reset();
+    _document_profiles.clear();
+    _spaces.remove_rows_from(_standard_spaces);
+    int selected = int(_space_type);
+    auto const color = _color_set->get();
+    if (_document) {
+        for (auto const &space : _document->getDocumentCMS().getSpaces()) {
+            if (!space->hasValidCmsProfile() || space->getComponentType() != Space::Type::CMYK) {
+                continue;
+            }
+            auto const id = ICC_FIRST_ID + static_cast<int>(_document_profiles.size());
+            _document_profiles.push_back(space);
+            auto const label = Glib::ustring::compose(_("CMYK: %1"), space->getName());
+            _spaces.add_row(space->getIcon(), label, id);
+            if ((previous && space->getName() == previous->getName()) ||
+                (!previous && _space_type == Space::Type::CMYK && color && color->getSpace() == space)) {
+                _profile = space;
+                selected = id;
+            }
+        }
+    }
+    _spaces.set_active_by_id(selected);
+    if (previous || _profile) {
+        switch_page(_space_type, _plate_type);
+    }
+}
+
 void ColorPickerPanelImpl::set_color(const Color& color) {
-    _color_set->set(color);
+    _color_set->set(color, false);
 }
 
 void ColorPickerPanelImpl::set_picker_type(Space::Type type) {
+    _profile.reset();
     switch_page(type, _plate_type);
 }
 

@@ -10,8 +10,11 @@
 
 #include <glibmm/i18n.h>
 #include <gtkmm/expander.h>
+#include <gtkmm/button.h>
 #include <gtkmm/grid.h>
 #include <gtkmm/label.h>
+
+#include "colors/spaces/base.h"
 
 #include "color-wheel-factory.h"
 #include "colors/color-set.h"
@@ -39,8 +42,12 @@ ColorPage::ColorPage(std::shared_ptr<Space::AnySpace> space, std::shared_ptr<Col
     // Keep the selected colorset in-sync with the space specific colorset.
     _specific_changed_connection = _specific_colors->signal_changed.connect([this]() {
         auto scoped = SignalBlocker{_selected_changed_connection};
-        for (auto &[id, color] : *_specific_colors) {
-            _selected_colors->set(id, color);
+        if (_space->getComponentType() == Space::Type::CMYK) {
+            _selected_colors->setAll(*_specific_colors, false);
+        } else {
+            for (auto &[id, color] : *_specific_colors) {
+                _selected_colors->set(id, color);
+            }
         }
     });
 
@@ -55,21 +62,24 @@ ColorPage::ColorPage(std::shared_ptr<Space::AnySpace> space, std::shared_ptr<Col
         }
     });
 
-    _selected_colors->signal_cleared.connect([this]() {
+    _selected_cleared_connection = _selected_colors->signal_cleared.connect([this]() {
         auto scoped = SignalBlocker(_specific_changed_connection);
         _specific_colors->clear();
     });
 
     // Control signals when widget isn't mapped (not visible to the user)
     signal_map().connect([this]() {
-        _specific_colors->setAll(*_selected_colors);
+        {
+            auto const block = SignalBlocker(_specific_changed_connection);
+            _specific_colors->setAll(*_selected_colors);
+        }
         _specific_changed_connection.unblock();
         _selected_changed_connection.unblock();
     });
 
     signal_unmap().connect([this]() {
-        _specific_colors->clear();
         _specific_changed_connection.block();
+        _specific_colors->clear();
         _selected_changed_connection.block();
     });
 
@@ -89,6 +99,25 @@ ColorPage::ColorPage(std::shared_ptr<Space::AnySpace> space, std::shared_ptr<Col
         _grid.attach(*slider, 1, row);
         _grid.attach(*spin, 2, row++);
         _channels.emplace_back(std::make_unique<ColorPageChannel>(_specific_colors, *label, *slider, *spin));
+    }
+
+    if (_space->getComponentType() == Space::Type::CMYK) {
+        auto button = Gtk::make_managed<Gtk::Button>(_("100% K"));
+        button->set_halign(Gtk::Align::START);
+        button->set_tooltip_text(_("Set pure black without cyan, magenta or yellow"));
+        append(*button);
+        button->signal_clicked().connect([this] {
+            ColorSet black;
+            for (auto const &[id, color] : *_selected_colors) {
+                auto ink = Color(_space, {0.0, 0.0, 0.0, 1.0});
+                if (color.hasOpacity()) {
+                    ink.enableOpacity(true);
+                    ink.setOpacity(color.getOpacity());
+                }
+                black.set(id, ink);
+            }
+            _selected_colors->setAll(black, false);
+        });
     }
 
     // Color wheel

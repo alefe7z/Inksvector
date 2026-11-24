@@ -210,6 +210,13 @@ void IconComboBox::add_row(Cairo::RefPtr<Cairo::Surface> image, const Glib::ustr
     _store->append(ListItem::create(id, label, {}, {}, tex));
 }
 
+void IconComboBox::remove_rows_from(unsigned int first)
+{
+    while (_store->get_n_items() > first) {
+        _store->remove(_store->get_n_items() - 1);
+    }
+}
+
 void IconComboBox::set_active_by_id(int const id)
 {
     auto [item, pos] = find_by_id(id, true);

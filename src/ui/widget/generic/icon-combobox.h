@@ -35,6 +35,7 @@ public:
     void add_row(Glib::ustring const &icon_name, Glib::ustring const &label, int id);
     void add_row(const Glib::ustring& icon_name, const Glib::ustring& full_name, const Glib::ustring& short_name, int id);
     void add_row(Cairo::RefPtr<Cairo::Surface> image, const Glib::ustring& label, int id);
+    void remove_rows_from(unsigned int first);
     // Set selected (aka active) item
     void set_active_by_id(int id);
     // Show/hide an item in store

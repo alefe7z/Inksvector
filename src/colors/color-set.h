@@ -59,7 +59,7 @@ public:
     std::optional<bool> const getAlphaConstraint() const { return _alpha_constraint; }
 
     // Set and get a single color (i.e. not a list of colors)
-    bool set(Color const &color);
+    bool set(Color const &color, bool keep_space = true);
     std::optional<Color> get() const;
     void clear();
 
@@ -68,7 +68,7 @@ public:
     bool set(std::string id, Color const &color);
 
     // Change the colors in some way and send signals
-    unsigned setAll(ColorSet const &other);
+    unsigned setAll(ColorSet const &other, bool keep_space = true);
     unsigned setAll(Color const &other);
     unsigned setAll(Space::Component const &c, double value);
     std::vector<double> getAll(Space::Component const &c) const;
@@ -87,7 +87,7 @@ public:
 
     bool isValid(const Space::Component& component) const;
 private:
-    bool _set(std::string const &id, Color const &color);
+    bool _set(std::string const &id, Color const &color, bool keep_space = true);
     void colors_changed();
     void colors_cleared();
 

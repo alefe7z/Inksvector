@@ -137,6 +137,31 @@ TEST(ColorSetTest, setAllColors)
     EXPECT_EQ(colors_b.get("i3")->toString(), "purple");
 }
 
+TEST(ColorSetTest, replaceColorSpacePreservesProcessInks)
+{
+    auto const black = *Color::parse("device-cmyk(0 0 0 1 / 0.45)");
+    auto const rgb = *Color::parse("rgba(0, 0, 0, 0.45)");
+    ColorSet current;
+    current.set(rgb);
+    EXPECT_TRUE(signalIsCalled(current.signal_changed, [&] { current.set(black, false); }));
+    ASSERT_TRUE(current.get());
+    EXPECT_EQ(*current.get(), black);
+
+    ColorSet next;
+    next.set(rgb);
+    // A visually equivalent value in another color model still changes the document.
+    EXPECT_TRUE(signalIsCalled(current.signal_changed, [&] { current.setAll(next, false); }));
+    EXPECT_EQ(*current.get(), rgb);
+
+    ColorSet constrained(rgb.getSpace(), false);
+    constrained.set(rgb);
+    constrained.setAll(next, false);
+    constrained.set(black, false);
+    ASSERT_TRUE(constrained.get());
+    EXPECT_EQ(constrained.get()->getSpace(), rgb.getSpace());
+    EXPECT_FALSE(constrained.get()->hasOpacity());
+}
+
 TEST(ColorSetTest, clearColors)
 {
     auto colors = ColorSet();

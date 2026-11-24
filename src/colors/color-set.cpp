@@ -146,11 +146,11 @@ unsigned ColorSet::setAll(Color const &other)
  *
  * @returns the number of colors changed or added
  */
-unsigned ColorSet::setAll(ColorSet const &other)
+unsigned ColorSet::setAll(ColorSet const &other, bool keep_space)
 {
     unsigned changed = 0;
     for (auto &[id, color] : other) {
-        changed += _set(id, color);
+        changed += _set(id, color, keep_space);
     }
     if (changed > 0) {
         colors_changed();
@@ -182,14 +182,18 @@ bool ColorSet::set(std::string id, Color const &other)
  *
  * @returns true if the color was new or changed.
  */
-bool ColorSet::set(Color const &other)
+bool ColorSet::set(Color const &other, bool keep_space)
 {
     // Always clear the colors if it's being used differently
     if (_colors.size() != 1 || _colors[0].first != "single") {
         _colors.clear();
         _colors_index.clear();
     }
-    return set("single", other);
+    if (_set("single", other, keep_space)) {
+        colors_changed();
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -205,14 +209,17 @@ std::optional<Color> ColorSet::get() const
 /*
  * Internal function for setting a color by id without calling the changed signal.
  */
-bool ColorSet::_set(std::string const &id, Color const &other)
+bool ColorSet::_set(std::string const &id, Color const &other, bool keep_space)
 {
     auto it = _colors_index.find(id);
     if (it != _colors_index.end()) {
         auto &color = _colors[it->second].second;
 
         auto was = color;
-        color.set(other, true);
+        color.set(other, keep_space || bool(_space_constraint));
+        if (_alpha_constraint) {
+            color.enableOpacity(*_alpha_constraint);
+        }
         return was != color;
     }
 

@@ -683,7 +683,14 @@ void DocumentProperties::linkSelectedProfile()
         // Read the filename and description from the list of available profiles
         Glib::ustring file = (*iter)[_AvailableProfilesListColumns.fileColumn];
 
-        document->getDocumentCMS().attachProfileToDoc(file, ColorProfileStorage::HREF_FILE, Colors::RenderingIntent::AUTO);
+        auto profile = Colors::CMS::System::get().getProfile(file.raw());
+        if (!profile) {
+            return;
+        }
+        auto const storage = profile->getColorSpace() == cmsSigCmykData
+                           ? ColorProfileStorage::HREF_DATA
+                           : ColorProfileStorage::HREF_FILE;
+        document->getDocumentCMS().attachProfileToDoc(*profile, storage, Colors::RenderingIntent::AUTO);
         // inform the document, so we can undo
         DocumentUndo::done(document, RC_("Undo", "Link Color Profile"), "");
 
