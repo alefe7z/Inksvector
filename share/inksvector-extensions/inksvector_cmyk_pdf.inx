@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Exportar PDF CMYK para impressão</name>
+  <id>org.inksvector.output.cmyk-pdf</id>
+  <param name="profile" type="path" mode="file" filetypes="icc,icm" gui-text="Perfil ICC CMYK da gráfica"/>
+  <param name="standard" type="optiongroup" appearance="combo" gui-text="Formato de saída">
+    <option value="pdf">PDF CMYK</option>
+    <option value="pdfx3">PDF/X-3</option>
+  </param>
+  <param name="dpi" type="int" min="72" max="1200" gui-text="Resolução de efeitos rasterizados (dpi)">300</param>
+  <output>
+    <extension>.pdf</extension>
+    <mimetype>application/pdf</mimetype>
+    <filetypename>PDF CMYK para impressão (*.pdf)</filetypename>
+    <filetypetooltip>Converte cores para o perfil ICC CMYK escolhido. Requer Ghostscript 10.</filetypetooltip>
+  </output>
+  <script><command location="inx" interpreter="python">inksvector_cmyk_pdf.py</command></script>
+</inkscape-extension>
