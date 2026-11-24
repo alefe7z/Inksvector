@@ -163,3 +163,13 @@ Base `8b89199`. Commits: [0bb477d](https://github.com/alefe7z/Inksvector/commit/
     - extrai a portátil e roda `inkscape.com --version` e uma exportação PNG;
     - instala em modo silencioso (`/S /D=C:\InksvectorTest`) e repete os dois testes.
   - Disparado por ordem explícita do Álefe ("gere o .exe para eu testar").
+
+## Claude — build Windows mais rápido — 24/11/2026
+
+Arquivo: `.github/workflows/windows-x64.yml`. Pedido do Álefe: compilações futuras mais rápidas.
+
+- **ccache entre execuções:** `CMAKE_C_COMPILER_LAUNCHER`/`CMAKE_CXX_COMPILER_LAUNCHER=ccache`. O cache fica em `ccache/` no workspace (`CCACHE_BASEDIR` = workspace, 3 GB, comprimido) e é salvo com `actions/cache@v4`, chave `ccache-windows-x64-<sha>` restaurando a última.
+- **`--parallel 4`:** antes era 2; o runner windows-2022 tem 4 vCPUs.
+- O `setup-msys2` já guarda em cache os pacotes baixados (padrão `cache: true`).
+- A execução nº 8 (45435259453) já estava rodando com a versão anterior do workflow e não foi afetada. A primeira execução com estas mudanças ainda leva o tempo cheio, porque é ela que preenche o cache. As seguintes recompilam só o que mudou. O log mostra `ccache --show-stats`.
+- Não testado ainda: valida na próxima execução disparada pelo Álefe.

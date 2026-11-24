@@ -13,6 +13,12 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
+    env:
+      # Compiler cache kept between runs: only translation units that changed are rebuilt.
+      CCACHE_DIR: ${{ github.workspace }}\ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_MAXSIZE: 3G
+      CCACHE_COMPRESS: "1"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,6 +29,12 @@ jobs:
           msystem: UCRT64
           update: true
           install: git zip
+
+      - uses: actions/cache@v4
+        with:
+          path: ccache
+          key: ccache-windows-x64-${{ github.sha }}
+          restore-keys: ccache-windows-x64-
 
       - name: Prepare source and dependencies
         run: |
@@ -36,8 +48,13 @@ jobs:
           [[ "$(gcc -dumpmachine)" == x86_64-w64-mingw32 ]]
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$PWD/stage")"
-          cmake --build build --target dist-win-exe --parallel 2
+          ccache --zero-stats
+          # windows-2022 runners have 4 vCPUs.
+          cmake --build build --target dist-win-exe --parallel 4
+          ccache --show-stats
           shopt -s nullglob
           installers=(build/inkscape-*.exe)
           [[ "${#installers[@]}" -eq 1 && -s "${installers[0]}" ]]
