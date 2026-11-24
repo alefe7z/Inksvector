@@ -1,0 +1,64 @@
+name: Windows x64
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 220
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          persist-credentials: false
+
+      - uses: msys2/setup-msys2@3c51bf698df1e37b2261f53cb67797b97761185c # v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: git
+
+      - name: Prepare source and dependencies
+        run: |
+          set -euo pipefail
+          source_dir=.
+          # Bootstrap the Windows build while the repository only has the workflow.
+          if [[ ! -f CMakeLists.txt ]]; then
+            source_dir=_upstream
+            upstream_commit=82ace79ad91b0af7e8fc4b93e194c64a5f17fd67
+            git init "$source_dir"
+            git -C "$source_dir" fetch --depth=1 https://gitlab.com/inkscape/inkscape.git "$upstream_commit"
+            git -C "$source_dir" checkout --detach "$upstream_commit"
+          fi
+          git -C "$source_dir" submodule update --init --recursive --depth=1 --jobs 4
+          bash "$source_dir/buildtools/msys2installdeps.sh"
+          echo "SOURCE_DIR=$source_dir" >> "$GITHUB_ENV"
+
+      - name: Compile and package the NSIS installer
+        run: |
+          set -euo pipefail
+          [[ "$(gcc -dumpmachine)" == x86_64-w64-mingw32 ]]
+          cmake -S "$SOURCE_DIR" -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$PWD/stage")"
+          cmake --build build --target dist-win-exe --parallel 2
+          shopt -s nullglob
+          installers=(build/inkscape-*.exe)
+          [[ "${#installers[@]}" -eq 1 && -s "${installers[0]}" ]]
+          mkdir -p dist
+          cp "${installers[0]}" dist/
+          (cd dist && sha256sum -- *.exe > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          name: inksvector-windows-x64
+          path: dist/
+          if-no-files-found: error
